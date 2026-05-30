@@ -367,7 +367,22 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 <div class="panel" id="panel-admin">
   <span class="panel-close" onclick="closeAllPanels()">×</span>
   <h3>☰ Admin</h3>
-  <div id="admin-list"></div>
+  <div id="admin-list-wrap">
+    <div id="admin-list"></div>
+    <div id="admin-add-zone" style="display:flex;gap:6px;margin-top:10px;align-items:center;">
+      <input type="text" id="new-admin" placeholder="Nou admin" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;width:100px;font-size:9pt;">
+      <button onclick="addAdmin()" style="padding:3px 10px;border:1px solid #bbb;border-radius:3px;cursor:pointer;font-size:9pt">Afegir</button>
+    </div>
+    <hr style="margin:12px 0;border:none;border-top:1px solid #eee">
+    <div id="admin-pw-change-zone">
+      <p style="font-size:9pt;margin-bottom:6px">Canviar la meva contrasenya:</p>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="password" id="new-pw" placeholder="Nova" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;width:100px;font-size:9pt;">
+        <button onclick="changePw()" style="padding:3px 10px;border:1px solid #bbb;border-radius:3px;cursor:pointer;font-size:9pt">Canviar</button>
+        <span id="pw-ok" style="color:green;font-size:9pt;display:none">✓</span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════ PANELL LLISTES ═══════════════ -->
@@ -383,6 +398,7 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
    1. CONFIGURACIÓ I DADES
 ═══════════════════════════════════════════════ */
 let adminLevel=''; // '' | 'admin' | 'master'
+let A=[];
 let G=['JE','JR','OG'];
 let T=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL'];
 let P=[...T];
@@ -455,6 +471,7 @@ function applyProfile(perfil){
   const priority=['master','admin','gestor','tramitador','presentador'];
   const primary=priority.find(r=>userRols.includes(r))||'tramitador';
   applyRol(primary);
+  if(adminLevel) A=['Admin',cU];
   loggedIn=true;
   document.getElementById('badge-nom').textContent=cU;
   document.getElementById('badge-rol').textContent=userRols.join(' + ');
@@ -725,7 +742,7 @@ function render(){
   rebuildRoleBtns();
 
   const hints={
-    a:'Admin autenticat — edició completa.',
+    a:adminLevel?'Admin autenticat — edició completa.':'Vista general — només lectura. Seleccioneu el vostre rol per editar.',
     g:`Gestor ${cU} — els vostres registres.`,
     t:`Tramitador ${cU} — editeu les vostres fitxes.`,
     p:`Presentador ${cU} — editeu Presentat i Resguard.`
@@ -789,7 +806,7 @@ function render(){
   fss.innerHTML=`<option value="">Totes</option>${SITS.filter(x=>x).map(x=>`<option value="${x}"${fSit===x?' selected':''}>${x}</option>`).join('')}`;
 
   document.getElementById('tbody').innerHTML=rows.map(d=>`<tr>
-    <td style="text-align:center;padding:2px">${isAdmin?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold" title="Eliminar">×</button>`:''}</td>
+    <td style="text-align:center;padding:2px">${isAdmin?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;padding:2px" title="Eliminar"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}</td>
     <td class="cg">${sel(d,'g',G,d.g)}</td>
     <td class="cemp">${ec(d,'emp',d.emp)}</td>
     <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${cT==='a'?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
@@ -920,26 +937,32 @@ function rebuildRoleBtns(){
     ['rbA','rbG','rbT','rbP'].forEach(id=>document.getElementById(id).innerHTML='');
     return;
   }
+  // Menú: visible per a tothom. Admin: mostra tots els noms de l'array A
+  if(adminLevel){
+    document.getElementById('rbA').innerHTML=A.map(u=>
+      `<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
+  } else {
+    document.getElementById('rbA').innerHTML=
+      `<button class="rbtn${cT==='a'?' active':''}" onclick="setU('${cU}','a')">Menú</button>`;
+  }
+
   if(adminLevel){
     // Admin/master: veu tots els botons per canviar vista
-    document.getElementById('rbA').innerHTML=
-      `<button class="rbtn${cT==='a'?' active':''}" onclick="setU('${cU}','a')">${cU}</button>`;
     document.getElementById('rbG').innerHTML=G.map(u=>
       `<button class="rbtn${u===cU&&cT==='g'?' active':''}" onclick="setU('${u}','g')">${u}</button>`).join('');
     document.getElementById('rbT').innerHTML=T.map(u=>
       `<button class="rbtn${u===cU&&cT==='t'?' active':''}" onclick="setU('${u}','t')">${u}</button>`).join('');
     document.getElementById('rbP').innerHTML=P.map(u=>
       `<button class="rbtn${u===cU&&cT==='p'?' active':''}" onclick="setU('${u}','p')">${u}</button>`).join('');
-    return;
+  } else {
+    // No-admin: només els seus propis rols
+    document.getElementById('rbG').innerHTML=userRols.includes('gestor')
+      ?`<button class="rbtn${cT==='g'?' active':''}" onclick="setU('${cU}','g')">${cU}</button>`:'';
+    document.getElementById('rbT').innerHTML=userRols.includes('tramitador')
+      ?`<button class="rbtn${cT==='t'?' active':''}" onclick="setU('${cU}','t')">${cU}</button>`:'';
+    document.getElementById('rbP').innerHTML=userRols.includes('presentador')
+      ?`<button class="rbtn${cT==='p'?' active':''}" onclick="setU('${cU}','p')">${cU}</button>`:'';
   }
-  // Usuari amb rols múltiples: mostra botons només dels rols que té
-  document.getElementById('rbA').innerHTML='';
-  document.getElementById('rbG').innerHTML=userRols.includes('gestor')
-    ?`<button class="rbtn${cT==='g'?' active':''}" onclick="setU('${cU}','g')">${cU}</button>`:'';
-  document.getElementById('rbT').innerHTML=userRols.includes('tramitador')
-    ?`<button class="rbtn${cT==='t'?' active':''}" onclick="setU('${cU}','t')">${cU}</button>`:'';
-  document.getElementById('rbP').innerHTML=userRols.includes('presentador')
-    ?`<button class="rbtn${cT==='p'?' active':''}" onclick="setU('${cU}','p')">${cU}</button>`:'';
 }
 
 /* ═══════════════════════════════════════════════
@@ -959,17 +982,35 @@ function closeAllPanels(){
   document.getElementById('overlay').classList.remove('open');
 }
 function renderAdminList(){
-  document.getElementById('admin-list').innerHTML=`
-    <p style="font-size:9.5pt;margin-bottom:10px">
-      Sessió activa: <strong>${cU}</strong>
-      &nbsp;<span style="font-size:8pt;background:#e8edf8;color:#2c5aa0;padding:1px 6px;border-radius:3px">${adminLevel}</span>
-    </p>
-    <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
-    <p style="font-size:9pt;color:#888;line-height:1.6">
-      Per gestionar usuaris i contrasenyes,<br>
-      utilitza el <a href="https://supabase.com/dashboard" target="_blank" style="color:#2c5aa0">Panell de Supabase</a>.
-    </p>
-  `;
+  const canEdit=adminLevel==='master';
+  document.getElementById('admin-list').innerHTML=A.map((u,i)=>`<div class="admin-item">
+    <span>${u}</span>
+    ${canEdit?(i>0?`<button class="llista-del" onclick="removeAdmin('${u}')">×</button>`:'<span style="font-size:8pt;color:#aaa">principal</span>'):''}
+  </div>`).join('');
+  const az=document.getElementById('admin-add-zone');
+  const pz=document.getElementById('admin-pw-change-zone');
+  if(az)az.style.display=canEdit?'flex':'none';
+  if(pz)pz.style.display=canEdit?'block':'none';
+}
+function addAdmin(){
+  if(adminLevel!=='master')return;
+  const v=document.getElementById('new-admin').value.trim();
+  if(v&&!A.includes(v)){A.push(v);document.getElementById('new-admin').value='';renderAdminList();}
+}
+function removeAdmin(u){
+  if(adminLevel!=='master')return;
+  if(A.length>1){A=A.filter(x=>x!==u);renderAdminList();}
+}
+async function changePw(){
+  if(adminLevel!=='master')return;
+  const v=document.getElementById('new-pw').value.trim();
+  if(!v)return;
+  const {error}=await sb.auth.updateUser({password:v});
+  document.getElementById('new-pw').value='';
+  if(!error){
+    document.getElementById('pw-ok').style.display='inline';
+    setTimeout(()=>document.getElementById('pw-ok').style.display='none',2000);
+  }
 }
 
 /* ═══════════════════════════════════════════════

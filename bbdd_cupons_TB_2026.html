@@ -121,6 +121,9 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 
 /* eMail / URL web / URL web check: no sobrepassar l'amplada de columna */
 .ceml span, .curlweb span, .curlwebchk span{display:inline-block;width:100%;white-space:nowrap;overflow:hidden;vertical-align:top;}
+.ov-cell{position:relative;}
+.ov-pop{display:none;position:absolute;left:0;top:100%;margin-top:2px;z-index:50;background:#fff;border:1px solid #2c5aa0;border-radius:4px;padding:5px 8px;box-shadow:0 2px 8px rgba(0,0,0,.2);white-space:normal;word-break:break-all;font-size:9.5pt;color:#222;max-width:420px;user-select:text;}
+.ov-cell:hover .ov-pop{display:block;}
 
 /* Camp Notes: alçada regulada amb botó d'expandir */
 .notes-wrap{position:relative;padding-right:18px;}
@@ -562,6 +565,9 @@ function ec(d,f,v,multi){
   if(!canEd(d,f))return `<span>${v||''}</span>`;
   return `<span class="ed" contenteditable="true" data-id="${d.id}" data-f="${f}" onblur="sv(this)" onkeydown="if(event.key==='Enter'&&!${!!multi}){event.preventDefault();this.blur()}">${v||''}</span>`;
 }
+function ovCell(v,html){
+  return `<div class="ov-cell">${html}${v?`<div class="ov-pop">${v}</div>`:''}</div>`;
+}
 function sel(d,f,list,v){
   if(cT!=='a'||!adminLevel)return `<span>${v||''}</span>`;
   const emptyOpt=f==='g'?'<option value=""></option>':'';
@@ -702,7 +708,7 @@ function render(){
     <td class="ccup">${sel(d,'cup',CUPS,d.cup)}</td>
     <td class="ccon">${ec(d,'cont',d.cont)}</td>
     <td class="cmob">${ec(d,'mob',d.mob)}</td>
-    <td class="ceml">${ec(d,'email',d.email)}</td>
+    <td class="ceml">${ovCell(d.email,ec(d,'email',d.email))}</td>
     <td class="csit">${sitCell(d)}</td>
     <td class="creg">${ec(d,'reg',d.reg)}</td>
     <td class="ctke" style="text-align:center;color:#555">${isAdmin&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
@@ -710,8 +716,8 @@ function render(){
     <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
     <td class="cfq">${selFQ(d,3)}</td><td class="cfd">${ec(d,'f3d',d.f3d)}</td>
     ${webCell(d)}
-    <td class="curlweb">${ec(d,'url_web',d.url_web)}</td>
-    <td class="curlwebchk">${ec(d,'url_web_check',d.url_web_check)}</td>
+    <td class="curlweb">${ovCell(d.url_web,ec(d,'url_web',d.url_web))}</td>
+    <td class="curlwebchk">${ovCell(d.url_web_check,ec(d,'url_web_check',d.url_web_check))}</td>
     ${itaCell(d)}
     <td class="cfq">${selFH(d)}</td>
     <td class="chra">${ec(d,'hora',d.hora)}</td>

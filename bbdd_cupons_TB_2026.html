@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BBDD Cupons TB 2027</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<title>BBDD Cupons TB 2026</title>
 <style>
 /* ═══════════════════════════════════════
    RESET I BASE
+   
 ═══════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#222;background:#fff;}
@@ -170,57 +170,15 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 .sch-checks{display:flex;gap:10px;margin-top:4px;font-size:8.5pt;color:#444;align-items:center;flex-wrap:wrap;}
 .sch-checks label{cursor:pointer;display:flex;align-items:center;gap:3px;}
 .sch-sep{border:none;border-top:1px solid #eee;margin:5px 0;}
-
-/* ═══════════════════════════════════════
-   LOGIN OVERLAY
-═══════════════════════════════════════ */
-#login-overlay{position:fixed;inset:0;background:#1e3160;display:flex;align-items:center;justify-content:center;z-index:99999;}
-#login-box{background:#fff;border-radius:10px;padding:36px 44px;min-width:300px;max-width:380px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.4);text-align:center;}
-.login-title{font-size:16pt;font-weight:bold;color:#2c5aa0;margin-bottom:4px;}
-.login-sub{font-size:9.5pt;color:#aaa;margin-bottom:24px;}
-.login-inp{display:block;width:100%;border:1px solid #ccc;border-radius:4px;padding:8px 11px;font-size:10.5pt;margin-bottom:10px;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;}
-.login-inp:focus{outline:none;border-color:#2c5aa0;box-shadow:0 0 0 2px rgba(44,90,160,.15);}
-.login-btn{width:100%;padding:9px;background:#2c5aa0;color:#fff;border:none;border-radius:4px;font-size:11pt;cursor:pointer;margin-top:4px;font-family:Arial,Helvetica,sans-serif;}
-.login-btn:hover:not(:disabled){background:#1a3d7a;}
-.login-btn:disabled{opacity:.6;cursor:default;}
-#login-err{color:#c00;font-size:9pt;margin-top:10px;min-height:16px;}
-
-/* ═══════════════════════════════════════
-   USER BADGE (TABS BAR)
-═══════════════════════════════════════ */
-.user-badge{display:flex;align-items:center;gap:8px;margin-left:auto;padding:0 12px 6px;font-size:9pt;color:#555;white-space:nowrap;}
-.user-badge strong{color:#2c5aa0;}
-.rol-tag{background:#e8edf8;color:#2c5aa0;border-radius:3px;padding:1px 6px;font-size:8pt;text-transform:uppercase;letter-spacing:.3px;}
-.logout-btn{border:1px solid #ccc;background:#f5f5f5;border-radius:3px;cursor:pointer;padding:2px 10px;font-size:9pt;font-family:Arial,Helvetica,sans-serif;}
-.logout-btn:hover{background:#fee;border-color:#c00;color:#c00;}
 </style>
 </head>
 <body>
-
-<!-- ═══════════════ LOGIN OVERLAY ═══════════════ -->
-<div id="login-overlay">
-  <div id="login-box">
-    <div class="login-title">TopBrands</div>
-    <div class="login-sub">BBDD Cupons 2027</div>
-    <input class="login-inp" type="email" id="login-email" placeholder="Email"
-      autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
-    <input class="login-inp" type="password" id="login-password" placeholder="Contrasenya"
-      autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar</button>
-    <div id="login-err"></div>
-  </div>
-</div>
 
 <!-- ═══════════════ PESTANYES ═══════════════ -->
 <div class="tabs">
   <button class="tab-btn active" onclick="showTab('bbdd')">📋 BBDD</button>
   <button class="tab-btn" onclick="showTab('sch-tickets')">🕐 Schedule — Tickets</button>
   <button class="tab-btn" onclick="showTab('sch-cupo')">🏷️ Schedule — Cupó</button>
-  <div class="user-badge">
-    <strong id="badge-nom"></strong>
-    <span class="rol-tag" id="badge-rol"></span>
-    <button class="logout-btn" onclick="doLogout()">Sortir</button>
-  </div>
 </div>
 
 <!-- ═══════════════ TAB BBDD ═══════════════ -->
@@ -367,7 +325,13 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 <div class="panel" id="panel-admin">
   <span class="panel-close" onclick="closeAllPanels()">×</span>
   <h3>☰ Admin</h3>
-  <div id="admin-list-wrap">
+  <div id="admin-pw-zone">
+    <p style="font-size:9pt;margin-bottom:8px">Contrasenya:</p>
+    <input type="password" id="pw-inp" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;margin-right:6px;">
+    <button onclick="checkPw()" style="padding:3px 10px;border:1px solid #bbb;border-radius:3px;cursor:pointer">Entrar</button>
+    <span id="pw-err" style="color:red;font-size:9pt;display:none;margin-left:6px">Incorrecta</span>
+  </div>
+  <div id="admin-list-wrap" style="display:none">
     <div id="admin-list"></div>
     <div id="admin-add-zone" style="display:flex;gap:6px;margin-top:10px;align-items:center;">
       <input type="text" id="new-admin" placeholder="Nou admin" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;width:100px;font-size:9pt;">
@@ -375,30 +339,32 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
     </div>
     <hr style="margin:12px 0;border:none;border-top:1px solid #eee">
     <div id="admin-pw-change-zone">
-      <p style="font-size:9pt;margin-bottom:6px">Canviar la meva contrasenya:</p>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <input type="password" id="new-pw" placeholder="Nova" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;width:100px;font-size:9pt;">
-        <button onclick="changePw()" style="padding:3px 10px;border:1px solid #bbb;border-radius:3px;cursor:pointer;font-size:9pt">Canviar</button>
-        <span id="pw-ok" style="color:green;font-size:9pt;display:none">✓</span>
-      </div>
+    <p style="font-size:9pt;margin-bottom:6px">Canviar contrasenya Master:</p>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input type="password" id="new-pw" placeholder="Nova" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;width:100px;font-size:9pt;">
+      <button onclick="changePw()" style="padding:3px 10px;border:1px solid #bbb;border-radius:3px;cursor:pointer;font-size:9pt">Canviar</button>
+      <span id="pw-ok" style="color:green;font-size:9pt;display:none">✓</span>
+    </div>
     </div>
   </div>
 </div>
 
 <!-- ═══════════════ PANELL LLISTES ═══════════════ -->
 <div class="panel" id="panel-llistes">
-  <span class="panel-close" onclick="closeAllPanels()">×</span>
+  <span class="panel-close" onclick="closeAllPanels(true)">×</span>
   <h3>☰ Llistes</h3>
   <div id="llistes-contingut"></div>
-  <div style="margin-top:14px;text-align:right"><button onclick="closeAllPanels()" style="padding:4px 14px;border:1px solid #bbb;border-radius:4px;cursor:pointer;font-size:9pt;background:#f5f5f5">Tancar</button></div>
+  <div style="margin-top:14px;text-align:right"><button onclick="closeAllPanels(true)" style="padding:4px 14px;border:1px solid #bbb;border-radius:4px;cursor:pointer;font-size:9pt;background:#f5f5f5">Tancar sessió ☰ Llistes</button></div>
 </div>
 
 <script>
 /* ═══════════════════════════════════════════════
    1. CONFIGURACIÓ I DADES
 ═══════════════════════════════════════════════ */
+let ADMIN_PW_MASTER='cuponsTB27';
+let ADMIN_PW_ADMIN='adminTB27';
 let adminLevel=''; // '' | 'admin' | 'master'
-let A=[];
+let A=['Admin'];
 let G=['JE','JR','OG'];
 let T=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL'];
 let P=[...T];
@@ -430,110 +396,17 @@ const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padS
 
 let D=[];
 let nid=1;
-let cU='', cT='a';
-let loggedIn=false;
-let userRols=[];
+let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false;
 
 
 /* ═══════════════════════════════════════════════
-   2. SUPABASE CLIENT
-═══════════════════════════════════════════════ */
-const SB_URL='https://ejgaegeizdnnskznahkm.supabase.co';
-const SB_KEY='sb_publishable_zknFPRccPaDIakVCaUfDGQ_hzgyixS9';
-const sb=window.supabase.createClient(SB_URL,SB_KEY);
-
-
-/* ═══════════════════════════════════════════════
-   3. AUTENTICACIÓ
-═══════════════════════════════════════════════ */
-async function checkAuth(){
-  const {data:{session}}=await sb.auth.getSession();
-  if(session) await loadProfile(session.user.id);
-  // Si no hi ha sessió, el login overlay ja és visible per defecte
-}
-
-async function loadProfile(userId){
-  const {data:perfil,error}=await sb.from('usuaris').select('nom_curt,rols').eq('id',userId).single();
-  if(error||!perfil){
-    await sb.auth.signOut();
-    showLoginErr("Usuari sense perfil configurat. Contacta l'administrador.");
-    return;
-  }
-  applyProfile(perfil);
-  await loadData();
-}
-
-function applyProfile(perfil){
-  cU=perfil.nom_curt;
-  userRols=perfil.rols||[];
-  // Rol principal per ordre de prioritat
-  const priority=['master','admin','gestor','tramitador','presentador'];
-  const primary=priority.find(r=>userRols.includes(r))||'tramitador';
-  applyRol(primary);
-  if(adminLevel) A=['Admin',cU];
-  loggedIn=true;
-  document.getElementById('badge-nom').textContent=cU;
-  document.getElementById('badge-rol').textContent=userRols.join(' + ');
-  document.getElementById('login-overlay').style.display='none';
-}
-
-function applyRol(r){
-  if(r==='master')         {cT='a';adminLevel='master';}
-  else if(r==='admin')     {cT='a';adminLevel='admin';}
-  else if(r==='gestor')    {cT='g';adminLevel='';}
-  else if(r==='tramitador'){cT='t';adminLevel='';}
-  else if(r==='presentador'){cT='p';adminLevel='';}
-}
-
-async function loadData(){
-  try{
-    const rows=await sbGet();
-    D=rows.map(sbToRow);
-    nid=D.length>0?Math.max(...D.map(x=>x.id))+1:1;
-    calcTickets();render();
-  }catch(e){
-    console.error('Error carregant dades:',e);
-    render();
-  }
-}
-
-async function doLogin(){
-  const email=document.getElementById('login-email').value.trim();
-  const pw=document.getElementById('login-password').value;
-  if(!email||!pw){showLoginErr('Introdueix email i contrasenya');return;}
-  const btn=document.getElementById('login-btn');
-  btn.textContent='Entrant…';btn.disabled=true;
-  document.getElementById('login-err').textContent='';
-  const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
-  btn.textContent='Entrar';btn.disabled=false;
-  if(error){showLoginErr('Credencials incorrectes');return;}
-  await loadProfile(data.user.id);
-}
-
-function showLoginErr(msg){
-  document.getElementById('login-err').textContent=msg;
-}
-
-async function doLogout(){
-  if(!confirm('Vols tancar la sessió?'))return;
-  await sb.auth.signOut();
-  cU='';cT='a';adminLevel='';loggedIn=false;D=[];
-  document.getElementById('badge-nom').textContent='';
-  document.getElementById('badge-rol').textContent='';
-  closeAllPanels();
-  document.getElementById('login-overlay').style.display='flex';
-  document.getElementById('login-email').value='';
-  document.getElementById('login-password').value='';
-}
-
-
-/* ═══════════════════════════════════════════════
-   4. UTILITATS
+   2. UTILITATS
 ═══════════════════════════════════════════════ */
 function fmtDate(v){
   if(!v)return '';
   v=v.trim();
+  // Formats: d/m, dd/mm, dd.mm.aa, dd.mm.aa hh:mm
   const m1=v.match(/^(\d{1,2})[\/\-\.](\d{1,2})$/);
   if(m1){
     const now=new Date();
@@ -572,7 +445,7 @@ function dateToMs(s){
 }
 
 /* ═══════════════════════════════════════════════
-   5. LÒGICA DE DADES
+   3. LÒGICA DE DADES
 ═══════════════════════════════════════════════ */
 function isValidDate(s){
   return s&&/^\d{2}\.\d{2}\.\d{2}/.test(s);
@@ -632,10 +505,14 @@ function calcTickets(){
    .sort((a,b)=>dateToMs(a.reg)-dateToMs(b.reg))
    .forEach((d,i)=>d.tke=String(i+1));
 }
+function delRow_placeholder(){} // sobreescrita per Supabase
+
+
+
 
 
 /* ═══════════════════════════════════════════════
-   6. PERMISOS
+   4. PERMISOS
 ═══════════════════════════════════════════════ */
 function canEd(d,f){
   if(fHora){
@@ -643,14 +520,14 @@ function canEd(d,f){
     return false;
   }
   if(cT==='a'){
-    if(!adminLevel) return false;
+    if(!adminLevel) return false; // no autenticat → només lectura
     if(f==='hora') return !!d.fhq;
     return true;
   }
   if(cT==='g')return false;
   if(cT==='p'){
     if(f==='notes')return d.pres===cU;
-    return false;
+    return false; // presentat/resguard es gestionen per separat
   }
   if(cT==='t'){
     if(f==='hora')return d.sit==='COMPLETAT'&&!d.hora&&d.fhq===cU;
@@ -664,7 +541,7 @@ function canEd(d,f){
 }
 
 /* ═══════════════════════════════════════════════
-   7. RENDER
+   5. RENDER
 ═══════════════════════════════════════════════ */
 function ec(d,f,v,multi){
   if(!canEd(d,f))return `<span>${v||''}</span>`;
@@ -741,16 +618,13 @@ function resguardTd(d){
 function render(){
   rebuildRoleBtns();
 
-  const hints={
-    a:adminLevel?'Admin autenticat — edició completa.':'Vista general — només lectura. Seleccioneu el vostre rol per editar.',
-    g:`Gestor ${cU} — els vostres registres.`,
-    t:`Tramitador ${cU} — editeu les vostres fitxes.`,
-    p:`Presentador ${cU} — editeu Presentat i Resguard.`
-  };
+  const hints={a:adminLevel?'Admin autenticat — edició completa.':'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`Gestor ${cU} — els vostres registres.`,
+    t:`Tramitador ${cU} — editeu les vostres fitxes.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`};
   document.getElementById('hint').textContent=hints[cT]||'';
 
   document.getElementById('btn-nova').style.display=cT==='a'?'inline-block':'none';
   const isAdmin=cT==='a'&&!!adminLevel;
+  const isMaster=cT==='a'&&adminLevel==='master';
   const webPendent=D.filter(d=>['COMPLETAT','PROCÉS'].includes(d.sit)&&d.web!=='SI').length;
   const btnWeb=document.getElementById('btnWeb');
   btnWeb.textContent=`WEB Pendent${webPendent>0?' ('+webPendent+')':''}`;
@@ -758,8 +632,8 @@ function render(){
   btnWeb.style.background=webPendent>0?'#F4CCCC':'';
   btnWeb.style.borderColor=webPendent>0?'#c00':'';
   document.getElementById('btn-nova').style.opacity=isAdmin?'1':'0.4';
-  document.getElementById('btn-nova').title=isAdmin?'':'Requereix rol Admin';
-  document.getElementById('btn-admin').style.display=cT==='a'?'inline-block':'none';
+  document.getElementById('btn-nova').title=isAdmin?'':'Requereix autenticació Admin';
+  document.getElementById('btn-admin').style.display=cT==='a'?'inline-block':'none'; // sempre visible
   document.getElementById('btn-llistes').style.display=isAdmin?'inline-block':'none';
 
   let rows=D.filter(d=>{
@@ -806,7 +680,7 @@ function render(){
   fss.innerHTML=`<option value="">Totes</option>${SITS.filter(x=>x).map(x=>`<option value="${x}"${fSit===x?' selected':''}>${x}</option>`).join('')}`;
 
   document.getElementById('tbody').innerHTML=rows.map(d=>`<tr>
-    <td style="text-align:center;padding:2px">${isAdmin?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;padding:2px" title="Eliminar"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}</td>
+    <td style="text-align:center;padding:2px">${isAdmin?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold" title="Eliminar">×</button>`:''}</td>
     <td class="cg">${sel(d,'g',G,d.g)}</td>
     <td class="cemp">${ec(d,'emp',d.emp)}</td>
     <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${cT==='a'?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
@@ -842,7 +716,7 @@ function render(){
 }
 
 /* ═══════════════════════════════════════════════
-   8. DROPDOWNS
+   6. DROPDOWNS
 ═══════════════════════════════════════════════ */
 function toggleDrop(e,wrap,cls){
   e.stopPropagation();
@@ -859,7 +733,7 @@ function toggleDrop(e,wrap,cls){
 document.addEventListener('click',()=>document.querySelectorAll('.sit-drop.open,.ita-drop.open').forEach(x=>x.classList.remove('open')));
 
 /* ═══════════════════════════════════════════════
-   9. PESTANYES
+   7. PESTANYES
 ═══════════════════════════════════════════════ */
 function showTab(id){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','sch-tickets','sch-cupo'][i]===id));
@@ -870,7 +744,7 @@ function showTab(id){
 }
 
 /* ═══════════════════════════════════════════════
-   10. SCHEDULES
+   8. SCHEDULES
 ═══════════════════════════════════════════════ */
 function cupBadge(cup){
   const m={CEXP:'background:#EEEDFE;color:#534AB7',PI:'background:#E1F5EE;color:#0F6E56',EC:'background:#E6F1FB;color:#185FA5',IA:'background:#FAEEDA;color:#854F0B'};
@@ -910,7 +784,7 @@ function renderSchCupo(){
 }
 
 /* ═══════════════════════════════════════════════
-   11. FILTRES
+   9. FILTRES
 ═══════════════════════════════════════════════ */
 function setU(u,t){
   cU=u;cT=t;fWeb=false;fHora=false;
@@ -930,56 +804,65 @@ function toggleHora(){
 }
 
 /* ═══════════════════════════════════════════════
-   12. BOTONS DE ROL
+   10. BOTONS DE ROL
 ═══════════════════════════════════════════════ */
 function rebuildRoleBtns(){
-  if(!loggedIn){
-    ['rbA','rbG','rbT','rbP'].forEach(id=>document.getElementById(id).innerHTML='');
-    return;
-  }
-  // Menú: visible per a tothom. Admin: mostra tots els noms de l'array A
-  if(adminLevel){
-    document.getElementById('rbA').innerHTML=A.map(u=>
-      `<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
-  } else {
-    document.getElementById('rbA').innerHTML=
-      `<button class="rbtn${cT==='a'?' active':''}" onclick="setU('${cU}','a')">Menú</button>`;
-  }
-
-  if(adminLevel){
-    // Admin/master: veu tots els botons per canviar vista
-    document.getElementById('rbG').innerHTML=G.map(u=>
-      `<button class="rbtn${u===cU&&cT==='g'?' active':''}" onclick="setU('${u}','g')">${u}</button>`).join('');
-    document.getElementById('rbT').innerHTML=T.map(u=>
-      `<button class="rbtn${u===cU&&cT==='t'?' active':''}" onclick="setU('${u}','t')">${u}</button>`).join('');
-    document.getElementById('rbP').innerHTML=P.map(u=>
-      `<button class="rbtn${u===cU&&cT==='p'?' active':''}" onclick="setU('${u}','p')">${u}</button>`).join('');
-  } else {
-    // No-admin: només els seus propis rols
-    document.getElementById('rbG').innerHTML=userRols.includes('gestor')
-      ?`<button class="rbtn${cT==='g'?' active':''}" onclick="setU('${cU}','g')">${cU}</button>`:'';
-    document.getElementById('rbT').innerHTML=userRols.includes('tramitador')
-      ?`<button class="rbtn${cT==='t'?' active':''}" onclick="setU('${cU}','t')">${cU}</button>`:'';
-    document.getElementById('rbP').innerHTML=userRols.includes('presentador')
-      ?`<button class="rbtn${cT==='p'?' active':''}" onclick="setU('${cU}','p')">${cU}</button>`:'';
-  }
+  document.getElementById('rbA').innerHTML=A.map(u=>`<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
+  document.getElementById('rbG').innerHTML=G.map(u=>`<button class="rbtn${u===cU&&cT==='g'?' active':''}" onclick="setU('${u}','g')">${u}</button>`).join('');
+  document.getElementById('rbT').innerHTML=T.map(u=>`<button class="rbtn${u===cU&&cT==='t'?' active':''}" onclick="setU('${u}','t')">${u}</button>`).join('');
+  document.getElementById('rbP').innerHTML=P.map(u=>`<button class="rbtn${u===cU&&cT==='p'?' active':''}" onclick="setU('${u}','p')">${u}</button>`).join('');
+}
+function rebuildAdminBtns(){
+  document.getElementById('rbA').innerHTML=A.map(u=>`<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
 }
 
 /* ═══════════════════════════════════════════════
-   13. PANELL ADMIN
+   11. PANELL ADMIN
 ═══════════════════════════════════════════════ */
 function togglePanel(id){
   const p=document.getElementById('panel-'+id);
   const ov=document.getElementById('overlay');
   if(p.classList.contains('open')){closeAllPanels();return;}
   closeAllPanels();
-  if(id==='admin') renderAdminList();
-  else if(id==='llistes') renderLlistes();
+  if(id==='admin'){
+    if(adminLevel){
+      document.getElementById('admin-pw-zone').style.display='none';
+      document.getElementById('admin-list-wrap').style.display='block';
+      renderAdminList();
+    }else if(A.includes(cU)&&cT==='a'){
+      adminLevel='master';
+      document.getElementById('admin-pw-zone').style.display='none';
+      document.getElementById('admin-list-wrap').style.display='block';
+      renderAdminList();
+    }else{
+      document.getElementById('admin-pw-zone').style.display='block';
+      document.getElementById('admin-list-wrap').style.display='none';
+      document.getElementById('pw-err').style.display='none';
+      document.getElementById('pw-inp').value='';
+      setTimeout(()=>document.getElementById('pw-inp').focus(),50);
+    }
+  }else if(id==='llistes')renderLlistes();
   p.classList.add('open');ov.classList.add('open');
 }
-function closeAllPanels(){
+function closeAllPanels(fromLlistes){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
   document.getElementById('overlay').classList.remove('open');
+  if(fromLlistes){adminLevel='';render();}
+}
+function checkPw(){
+  const v=document.getElementById('pw-inp').value;
+  if(v===ADMIN_PW_MASTER) adminLevel='master';
+  else if(v===ADMIN_PW_ADMIN) adminLevel='admin';
+  else{
+    document.getElementById('pw-err').style.display='inline';
+    document.getElementById('pw-inp').value='';
+    return;
+  }
+  document.getElementById('pw-err').style.display='none';
+  document.getElementById('pw-inp').style.display='none';
+  document.querySelector('#panel-admin button[onclick="checkPw()"]').style.display='none';
+  document.getElementById('admin-list-wrap').style.display='block';
+  renderAdminList();render();
 }
 function renderAdminList(){
   const canEdit=adminLevel==='master';
@@ -995,26 +878,20 @@ function renderAdminList(){
 function addAdmin(){
   if(adminLevel!=='master')return;
   const v=document.getElementById('new-admin').value.trim();
-  if(v&&!A.includes(v)){A.push(v);document.getElementById('new-admin').value='';renderAdminList();}
+  if(v&&!A.includes(v)){A.push(v);document.getElementById('new-admin').value='';rebuildAdminBtns();renderAdminList();}
 }
 function removeAdmin(u){
   if(adminLevel!=='master')return;
-  if(A.length>1){A=A.filter(x=>x!==u);renderAdminList();}
+  if(A.length>1){A=A.filter(x=>x!==u);rebuildAdminBtns();renderAdminList();}
 }
-async function changePw(){
+function changePw(){
   if(adminLevel!=='master')return;
   const v=document.getElementById('new-pw').value.trim();
-  if(!v)return;
-  const {error}=await sb.auth.updateUser({password:v});
-  document.getElementById('new-pw').value='';
-  if(!error){
-    document.getElementById('pw-ok').style.display='inline';
-    setTimeout(()=>document.getElementById('pw-ok').style.display='none',2000);
-  }
+  if(v){ADMIN_PW_MASTER=v;document.getElementById('new-pw').value='';document.getElementById('pw-ok').style.display='inline';setTimeout(()=>document.getElementById('pw-ok').style.display='none',2000);}
 }
 
 /* ═══════════════════════════════════════════════
-   14. PANELL LLISTES
+   12. PANELL LLISTES
 ═══════════════════════════════════════════════ */
 function renderLlistes(){
   const llistes=[
@@ -1064,25 +941,34 @@ function removeFromList(key,v){
 }
 
 /* ═══════════════════════════════════════════════
-   15. SUPABASE — OPERACIONS DE DADES
+   13. SUPABASE — CONNEXIÓ I PERSISTÈNCIA
 ═══════════════════════════════════════════════ */
+const NEON_CONN='postgresql://neondb_owner:npg_wCyd8sYr0cBb@ep-rapid-butterfly-abxlbyao-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+let neonSql=null;
+async function initNeon(){if(neonSql)return;const{neon}=await import('https://esm.sh/@neondatabase/serverless');neonSql=neon(NEON_CONN);}
+async function neonQuery(sql,params=[]){await initNeon();return params.length?await neonSql.query(sql,params):await neonSql.query(sql);}
+
 async function sbGet(){
-  const {data,error}=await sb.from('cupons').select('*').order('id',{ascending:true});
-  if(error)throw error;
-  return data;
+  const res=await neonQuery(`SELECT * FROM cupons ORDER BY id ASC`);
+  return res.rows||[];
 }
 async function sbInsert(d){
-  const {data,error}=await sb.from('cupons').insert([rowToSb(d)]).select().single();
-  if(error)throw error;
-  return data;
+  const s=rowToSb(d);
+  const res=await neonQuery(
+    `INSERT INTO cupons (g,emp,nova,cup,cont,mob,email,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
+  );
+  return res.rows?.[0];
 }
 async function sbUpdate(id,d){
-  const {error}=await sb.from('cupons').update(rowToSb(d)).eq('id',id);
-  if(error)throw error;
+  const s=rowToSb(d);
+  await neonQuery(
+    `UPDATE cupons SET g=$1,emp=$2,nova=$3,cup=$4,cont=$5,mob=$6,email=$7,reg=$8,sit=$9,tke=$10,f1q=$11,f1d=$12,f2q=$13,f2d=$14,f3q=$15,f3d=$16,web=$17,ita=$18,fhq=$19,hora=$20,pres=$21,presentat=$22,resguard=$23,notes=$24 WHERE id=$25`,
+    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
+  );
 }
 async function sbDelete(id){
-  const {error}=await sb.from('cupons').delete().eq('id',id);
-  if(error)throw error;
+  await neonQuery(`DELETE FROM cupons WHERE id=$1`,[id]);
 }
 
 function rowToSb(d){
@@ -1118,10 +1004,24 @@ function showError(msg){
 }
 
 /* ═══════════════════════════════════════════════
-   16. ACCIONS DE FILA
+   14. INICIALITZACIÓ — Carrega des de Supabase
 ═══════════════════════════════════════════════ */
+async function init(){
+  try{
+    const rows=await sbGet();
+    D=rows.map(sbToRow);
+    nid=D.length>0?Math.max(...D.map(x=>x.id))+1:1;
+    calcTickets();render();
+  }catch(e){
+    console.error('Error carregant dades:',e);
+    render(); // mostra buit si falla
+  }
+}
+
+// Sobreescriure addRow per guardar a Supabase
+const _addRow=addRow;
 async function addRow(){
-  if(!adminLevel)return;
+  if(!adminLevel){togglePanel('admin');return;} // demanar password si no autenticat
   const nou={id:nid++,g:'',emp:'',nova:false,cup:'',cont:'',mob:'',email:'',
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
     web:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:''};
@@ -1134,6 +1034,7 @@ async function addRow(){
   }catch(e){showError(e.message);}
 }
 
+// Sobreescriure delRow per esborrar a Supabase
 async function delRow(id){
   if(!confirm('Eliminar aquest registre?'))return;
   showSaving();
@@ -1145,6 +1046,8 @@ async function delRow(id){
   }catch(e){showError(e.message);}
 }
 
+// Sobreescriure sv per guardar a Supabase
+const _sv=sv;
 async function sv(el){
   const id=+el.dataset.id,f=el.dataset.f;
   const d=D.find(x=>x.id===id);
@@ -1167,6 +1070,8 @@ async function sv(el){
   render();
 }
 
+// Sobreescriure svs per guardar a Supabase
+const _svs=svs;
 async function svs(id,f,v){
   const d=D.find(x=>x.id===id);
   if(!d)return;
@@ -1178,6 +1083,8 @@ async function svs(id,f,v){
   render();
 }
 
+// Sobreescriure svSit per guardar a Supabase
+const _svSit=svSit;
 async function svSit(id,val){
   document.querySelectorAll('.sit-drop.open').forEach(x=>x.classList.remove('open'));
   const d=D.find(x=>x.id===id);
@@ -1189,6 +1096,7 @@ async function svSit(id,val){
   render();
 }
 
+// Sobreescriure svIta per guardar a Supabase
 async function svIta(id,val){
   document.querySelectorAll('.ita-drop.open').forEach(x=>x.classList.remove('open'));
   const d=D.find(x=>x.id===id);
@@ -1199,14 +1107,11 @@ async function svIta(id,val){
   render();
 }
 
-/* ═══════════════════════════════════════════════
-   17. INICIALITZACIÓ
-═══════════════════════════════════════════════ */
-checkAuth();
+init();
 
-// Polling: actualitza dades cada 5 segons
+// ── POLLING: actualitza dades cada 5 segons ──
 setInterval(async()=>{
-  if(!loggedIn)return;
+  // No actualitzar si l'usuari està editant activament
   if(document.activeElement&&document.activeElement.classList.contains('ed'))return;
   try{
     const rows=await sbGet();

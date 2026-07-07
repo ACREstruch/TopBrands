@@ -99,8 +99,8 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 .ccon{width:143px;min-width:143px;max-width:143px;}
 .cmob{width:82px;min-width:82px;max-width:82px;}
 .ceml{width:155px;min-width:155px;max-width:155px;}
-.curlweb{width:155px;min-width:155px;max-width:155px;}
-.curlwebchk{width:155px;min-width:155px;max-width:155px;}
+.curlweb{width:170px;min-width:170px;max-width:170px;}
+.curlwebchk{width:170px;min-width:170px;max-width:170px;}
 .creg{width:105px;min-width:105px;max-width:105px;}
 .csit{width:120px;min-width:120px;max-width:120px;}
 .ctke{width:48px;min-width:48px;max-width:48px;}
@@ -118,6 +118,9 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 .ed{outline:none;display:inline-block;min-width:20px;width:100%;cursor:text;}
 .ed:focus{background:#fffde7;border-radius:2px;}
 .webcel{text-align:center;}
+
+/* eMail / URL web / URL web check: no sobrepassar l'amplada de columna */
+.ceml span, .curlweb span, .curlwebchk span{display:inline-block;width:100%;white-space:nowrap;overflow:hidden;vertical-align:top;}
 
 /* Camp Notes: alçada regulada amb botó d'expandir */
 .notes-wrap{position:relative;padding-right:18px;}

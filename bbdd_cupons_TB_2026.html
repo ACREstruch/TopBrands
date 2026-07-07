@@ -112,12 +112,19 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 .cpres{width:82px;min-width:82px;max-width:82px;}
 .cpret{width:82px;min-width:82px;max-width:82px;}
 .crsgd{width:82px;min-width:82px;max-width:82px;}
-.cnot{width:600px;min-width:180px;}
+.cnot{width:750px;min-width:220px;}
 
 /* Cel·la editable */
 .ed{outline:none;display:inline-block;min-width:20px;width:100%;cursor:text;}
 .ed:focus{background:#fffde7;border-radius:2px;}
 .webcel{text-align:center;}
+
+/* Camp Notes: alçada regulada amb botó d'expandir */
+.notes-wrap{position:relative;padding-right:18px;}
+.notes-wrap .ed{max-height:38px;overflow:hidden;}
+.notes-wrap.expanded .ed{max-height:none;overflow:visible;}
+.notes-toggle{display:none;position:absolute;bottom:1px;right:0;width:15px;height:15px;line-height:13px;padding:0;text-align:center;border:1px solid #2c5aa0;border-radius:3px;background:#eef2fa;color:#2c5aa0;font-size:10px;font-weight:bold;cursor:pointer;}
+.notes-toggle:hover{background:#2c5aa0;color:#fff;}
 
 /* Desplegables Estat */
 .sit-wrap{position:relative;cursor:pointer;padding:2px 4px;display:flex;align-items:center;justify-content:space-between;border-radius:3px;}
@@ -403,6 +410,7 @@ let D=[];
 let nid=1;
 let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false;
+let notesExpanded=new Set();
 
 
 /* ═══════════════════════════════════════════════
@@ -708,7 +716,7 @@ function render(){
     ${presCell(d)}
     ${presTd(d)}
     ${resguardTd(d)}
-    <td class="ncell cnot">${ec(d,'notes',d.notes,true)}</td>
+    <td class="ncell cnot"><div class="notes-wrap${notesExpanded.has(d.id)?' expanded':''}" data-id="${d.id}">${ec(d,'notes',d.notes,true)}<button type="button" class="notes-toggle" onclick="toggleNotes(this)">+</button></div></td>
   </tr>`).join('');
 
   // Ajust top de la 2a fila de capçalera
@@ -719,7 +727,27 @@ function render(){
       if(rows[1])rows[1].querySelectorAll('th').forEach(th=>th.style.top=h1+'px');
       if(rows[2])rows[2].querySelectorAll('th').forEach(th=>th.style.top=(h1+(rows[1]?rows[1].offsetHeight:0))+'px');
     }
+    document.querySelectorAll('.notes-wrap').forEach(w=>{
+      const ed=w.querySelector('.ed');
+      const btn=w.querySelector('.notes-toggle');
+      if(!ed||!btn)return;
+      if(w.classList.contains('expanded')){
+        btn.textContent='−';
+        btn.style.display='inline-block';
+      } else {
+        const overflow=ed.scrollHeight>ed.clientHeight+1;
+        btn.textContent='+';
+        btn.style.display=overflow?'inline-block':'none';
+      }
+    });
   });
+}
+function toggleNotes(btn){
+  const wrap=btn.parentElement;
+  const id=+wrap.dataset.id;
+  const isExp=wrap.classList.toggle('expanded');
+  if(isExp)notesExpanded.add(id);else notesExpanded.delete(id);
+  btn.textContent=isExp?'−':'+';
 }
 
 /* ═══════════════════════════════════════════════

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BBDD Cupons TB 2027</title>
+<title>BBDD Cupons TB 2026</title>
 <style>
 /* ═══════════════════════════════════════
    RESET I BASE
@@ -249,11 +249,12 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
         <col style="width:22px">
         <col class="cg"><col class="cemp"><col class="cnov"><col class="ccup">
         <col class="ccon"><col class="cmob"><col class="ceml">
+        <col class="curlweb"><col class="curlwebchk">
         <col class="csit"><col class="creg"><col class="ctke">
         <col class="cfq"><col class="cfd">
         <col class="cfq"><col class="cfd">
         <col class="cfq"><col class="cfd">
-        <col class="cweb"><col class="curlweb"><col class="curlwebchk"><col class="cita">
+        <col class="cweb"><col class="cita">
         <col class="cfq"><col class="chra">
         <col class="cpres"><col class="cpret"><col class="crsgd">
         <col class="cnot">
@@ -268,10 +269,12 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
           <th rowspan="3">Contacte</th>
           <th rowspan="3">Mòbil</th>
           <th rowspan="3">eMail</th>
+          <th rowspan="3">URL web</th>
+          <th rowspan="3">URL web check</th>
           <th rowspan="3">Estat</th>
           <th rowspan="3">Entrada</th>
           <th rowspan="3">Ticket</th>
-          <th colspan="10" style="background:#2c5aa0;color:#fff;letter-spacing:1px">TRAMITACIÓ</th>
+          <th colspan="8" style="background:#2c5aa0;color:#fff;letter-spacing:1px">TRAMITACIÓ</th>
           <th colspan="2" style="background:#2c5aa0;color:#fff;letter-spacing:1px">HORA</th>
           <th colspan="3" style="background:#2c5aa0;color:#fff;letter-spacing:1px">PRESENTACIÓ</th>
           <th rowspan="3">Notes</th>
@@ -281,8 +284,6 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
           <th colspan="2" style="border-bottom:none">Verificar Fitxa</th>
           <th colspan="2" style="border-bottom:none">Validar Fitxa</th>
           <th rowspan="2">Web</th>
-          <th rowspan="2">URL web</th>
-          <th rowspan="2">URL web check</th>
           <th rowspan="2">ITA<br><span style="font-weight:normal">(solo IA)</span></th>
           <th colspan="2" style="border-bottom:none">Validar Hora</th>
           <th rowspan="2">Presentador</th>
@@ -692,6 +693,8 @@ function render(){
     <td class="ccon">${ec(d,'cont',d.cont)}</td>
     <td class="cmob">${ec(d,'mob',d.mob)}</td>
     <td class="ceml">${ec(d,'email',d.email)}</td>
+    <td class="curlweb">${ec(d,'url_web',d.url_web)}</td>
+    <td class="curlwebchk">${ec(d,'url_web_check',d.url_web_check)}</td>
     <td class="csit">${sitCell(d)}</td>
     <td class="creg">${ec(d,'reg',d.reg)}</td>
     <td class="ctke" style="text-align:center;color:#555">${isAdmin&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
@@ -699,8 +702,6 @@ function render(){
     <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
     <td class="cfq">${selFQ(d,3)}</td><td class="cfd">${ec(d,'f3d',d.f3d)}</td>
     ${webCell(d)}
-    <td class="curlweb">${ec(d,'url_web',d.url_web)}</td>
-    <td class="curlwebchk">${ec(d,'url_web_check',d.url_web_check)}</td>
     ${itaCell(d)}
     <td class="cfq">${selFH(d)}</td>
     <td class="chra">${ec(d,'hora',d.hora)}</td>
@@ -968,10 +969,25 @@ async function sbInsert(d){
 }
 async function sbUpdate(id,d){
   const s=rowToSb(d);
-  await neonQuery(
-    `UPDATE cupons SET g=$1,emp=$2,nova=$3,cup=$4,cont=$5,mob=$6,email=$7,url_web=$8,url_web_check=$9,reg=$10,sit=$11,tke=$12,f1q=$13,f1d=$14,f2q=$15,f2d=$16,f3q=$17,f3d=$18,web=$19,ita=$20,fhq=$21,hora=$22,pres=$23,presentat=$24,resguard=$25,notes=$26 WHERE id=$27`,
+  // Comprovació de conflicte: algú altre pot haver modificat aquest registre mentre l'editaves
+  const chk=await neonQuery(`SELECT updated_at FROM cupons WHERE id=$1`,[id]);
+  const serverTs=chk.rows?.[0]?.updated_at;
+  if(d.updated_at&&serverTs&&new Date(serverTs).getTime()!==new Date(d.updated_at).getTime()){
+    const overwrite=confirm("⚠️ Aquest registre l'ha modificat un altre usuari mentre l'editaves.\n\nAcceptar = sobreescriure amb els teus canvis\nCancel·lar = descartar els teus canvis i recarregar les dades actuals");
+    if(!overwrite){
+      const fresh=await neonQuery(`SELECT * FROM cupons WHERE id=$1`,[id]);
+      if(fresh.rows?.[0]){
+        const idx=D.findIndex(x=>x.id===id);
+        if(idx>-1){D[idx]=sbToRow(fresh.rows[0]);calcTickets();render();}
+      }
+      throw new Error('CANCELLED_BY_USER');
+    }
+  }
+  const res=await neonQuery(
+    `UPDATE cupons SET g=$1,emp=$2,nova=$3,cup=$4,cont=$5,mob=$6,email=$7,url_web=$8,url_web_check=$9,reg=$10,sit=$11,tke=$12,f1q=$13,f1d=$14,f2q=$15,f2d=$16,f3q=$17,f3d=$18,web=$19,ita=$20,fhq=$21,hora=$22,pres=$23,presentat=$24,resguard=$25,notes=$26,updated_at=NOW() WHERE id=$27 RETURNING updated_at`,
     [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
   );
+  d.updated_at=res.rows?.[0]?.updated_at;
 }
 async function sbDelete(id){
   await neonQuery(`DELETE FROM cupons WHERE id=$1`,[id]);
@@ -991,7 +1007,7 @@ function sbToRow(r){
     sit:r.sit||'POTENCIAL',tke:r.tke||'',f1q:r.f1q||'',f1d:r.f1d||'',
     f2q:r.f2q||'',f2d:r.f2d||'',f3q:r.f3q||'',f3d:r.f3d||'',web:r.web||'',
     ita:r.ita||'',fhq:r.fhq||'',hora:r.hora||'',pres:r.pres||'',
-    presentat:!!r.presentat,resguard:!!r.resguard,notes:r.notes||''};
+    presentat:!!r.presentat,resguard:!!r.resguard,notes:r.notes||'',updated_at:r.updated_at||null};
 }
 
 // Indicador de guardat
@@ -1036,7 +1052,7 @@ async function addRow(){
   showSaving();
   try{
     const saved=await sbInsert(nou);
-    if(saved)nou.id=saved.id;
+    if(saved){nou.id=saved.id;nou.updated_at=saved.updated_at;}
     D.push(nou);nid=nou.id+1;
     calcTickets();render();showSaved();
   }catch(e){showError(e.message);}
@@ -1074,7 +1090,7 @@ async function sv(el){
   }
   d[f]=v;checkAutoComplete(d);calcTickets();
   showSaving();
-  try{await sbUpdate(d.id,d);showSaved();}catch(e){showError(e.message);}
+  try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}
   render();
 }
 
@@ -1087,7 +1103,7 @@ async function svs(id,f,v){
   if(f==='cup'){if(v==='IA'&&!d.ita)d.ita='DEMANAR';if(v!=='IA')d.ita='';}
   checkAutoComplete(d);calcTickets();
   showSaving();
-  try{await sbUpdate(d.id,d);showSaved();}catch(e){showError(e.message);}
+  try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}
   render();
 }
 
@@ -1100,7 +1116,7 @@ async function svSit(id,val){
   if(['COMPLETAT','PROCÉS'].includes(val)&&!d.reg)return;
   d.sit=val;calcTickets();
   showSaving();
-  try{await sbUpdate(d.id,d);showSaved();}catch(e){showError(e.message);}
+  try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}
   render();
 }
 
@@ -1111,7 +1127,7 @@ async function svIta(id,val){
   if(!d)return;
   d.ita=val;
   showSaving();
-  try{await sbUpdate(d.id,d);showSaved();}catch(e){showError(e.message);}
+  try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}
   render();
 }
 
@@ -1130,7 +1146,7 @@ setInterval(async()=>{
       calcTickets();render();
     }
   }catch(e){console.warn('Polling error:',e);}
-},5000);
+},2000);
 </script>
 </body>
 </html>

@@ -872,16 +872,13 @@ function togglePanel(id){
       document.getElementById('admin-pw-zone').style.display='none';
       document.getElementById('admin-list-wrap').style.display='block';
       renderAdminList();
-    }else if(A.includes(cU)&&cT==='a'){
-      adminLevel='master';
-      document.getElementById('admin-pw-zone').style.display='none';
-      document.getElementById('admin-list-wrap').style.display='block';
-      renderAdminList();
     }else{
       document.getElementById('admin-pw-zone').style.display='block';
       document.getElementById('admin-list-wrap').style.display='none';
       document.getElementById('pw-err').style.display='none';
       document.getElementById('pw-inp').value='';
+      document.getElementById('pw-inp').style.display='';
+      document.querySelector('#panel-admin button[onclick="checkPw()"]').style.display='';
       setTimeout(()=>document.getElementById('pw-inp').focus(),50);
     }
   }else if(id==='llistes')renderLlistes();

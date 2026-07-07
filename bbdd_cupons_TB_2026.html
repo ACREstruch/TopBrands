@@ -919,7 +919,7 @@ function checkPw(){
 function renderAdminList(){
   const canEdit=adminLevel==='master';
   document.getElementById('admin-list').innerHTML=A.map((u,i)=>`<div class="admin-item">
-    <span>${u}</span>
+    <span>${u}${canEdit&&i>0?` <span style="font-size:8pt;color:#888">(${ADMIN_PWS[u]||''})</span>`:''}</span>
     ${canEdit?(i>0?`<button class="llista-del" title="Canviar contrasenya" onclick="resetAdminPw('${u}')" style="border:none;background:none;cursor:pointer;font-size:11pt;margin-right:4px">🔑</button><button class="llista-del" title="Eliminar" onclick="removeAdmin('${u}')">×</button>`:'<span style="font-size:8pt;color:#aaa">principal (Master)</span>'):''}
   </div>`).join('');
   const az=document.getElementById('admin-add-zone');

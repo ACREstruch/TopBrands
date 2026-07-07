@@ -77,7 +77,7 @@ tbody tr:nth-child(even){background:#f9f9f9;}
 thead th{position:sticky;top:0;z-index:3;background:#D9E1F2;}
 thead tr:nth-child(2) th{top:28px;}
 
-/* Sticky columnes fixes: ×(22) Gestor(52) Empresa(195) Nova(36) Cupó(68) */
+/* Sticky columnes fixes: ×(22) KAM(52) Empresa(195) Nova(36) Cupó(68) */
 td:first-child, thead tr:first-child th:nth-child(1)
   {position:sticky;left:0;z-index:4;background:#D9E1F2;}
 td.cg, thead tr:first-child th:nth-child(2)
@@ -209,7 +209,7 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
           <div class="rnames" id="rbA"></div>
         </div>
         <div class="role-block">
-          <span class="rbl">Gestors</span>
+          <span class="rbl">KAM</span>
           <div class="rnames" id="rbG"></div>
         </div>
         <div class="role-block">
@@ -274,7 +274,7 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
       <thead>
         <tr>
           <th rowspan="3"></th>
-          <th rowspan="3">Gestor</th>
+          <th rowspan="3">KAM</th>
           <th rowspan="3">Empresa</th>
           <th rowspan="3">Nova</th>
           <th rowspan="3">Cupó</th>
@@ -639,7 +639,7 @@ function resguardTd(d){
 function render(){
   rebuildRoleBtns();
 
-  const hints={a:adminLevel?'Admin autenticat — edició completa.':'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`Gestor ${cU} — els vostres registres.`,
+  const hints={a:adminLevel?'Admin autenticat — edició completa.':'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
     t:`Tramitador ${cU} — editeu les vostres fitxes.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`};
   document.getElementById('hint').textContent=hints[cT]||'';
 
@@ -938,7 +938,7 @@ function changePw(){
 ═══════════════════════════════════════════════ */
 function renderLlistes(){
   const llistes=[
-    {title:'Gestors',arr:G,key:'g',note:''},
+    {title:'KAM',arr:G,key:'g',note:''},
     {title:'Tramitadors',arr:T,key:'t',note:'(= Qui Omplir)'},
     {title:'Presentadors',arr:P,key:'pre',note:''},
     {title:'Cupons',arr:CUPS.filter(x=>x),key:'c',note:''},

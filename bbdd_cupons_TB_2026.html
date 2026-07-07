@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BBDD Cupons TB 2026</title>
+<title>BBDD Cupons TB 2027</title>
 <style>
 /* ═══════════════════════════════════════
    RESET I BASE
@@ -946,7 +946,7 @@ function removeFromList(key,v){
 const NEON_CONN='postgresql://neondb_owner:npg_wCyd8sYr0cBb@ep-rapid-butterfly-abxlbyao-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 let neonSql=null;
 async function initNeon(){if(neonSql)return;const{neon}=await import('https://esm.sh/@neondatabase/serverless');neonSql=neon(NEON_CONN);}
-async function neonQuery(sql,params=[]){await initNeon();return params.length?await neonSql.query(sql,params):await neonSql.query(sql);}
+async function neonQuery(sql,params=[]){await initNeon();const res=params.length?await neonSql.query(sql,params):await neonSql.query(sql);return{rows:res.rows||res};}
 
 async function sbGet(){
   const res=await neonQuery(`SELECT * FROM cupons ORDER BY id ASC`);

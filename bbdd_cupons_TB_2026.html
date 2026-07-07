@@ -350,8 +350,9 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
   </div>
   <div id="admin-list-wrap" style="display:none">
     <div id="admin-list"></div>
-    <div id="admin-add-zone" style="display:flex;gap:6px;margin-top:10px;align-items:center;">
-      <input type="text" id="new-admin" placeholder="Nou admin" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;width:100px;font-size:9pt;">
+    <div id="admin-add-zone" style="display:flex;gap:6px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="new-admin" placeholder="Nom" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;width:90px;font-size:9pt;">
+      <input type="password" id="new-admin-pw" placeholder="Contrasenya" style="border:1px solid #ccc;padding:3px 6px;border-radius:3px;width:100px;font-size:9pt;">
       <button onclick="addAdmin()" style="padding:3px 10px;border:1px solid #bbb;border-radius:3px;cursor:pointer;font-size:9pt">Afegir</button>
     </div>
     <hr style="margin:12px 0;border:none;border-top:1px solid #eee">
@@ -379,7 +380,9 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
    1. CONFIGURACIÓ I DADES
 ═══════════════════════════════════════════════ */
 let ADMIN_PW_MASTER='cuponsTB';
-let ADMIN_PW_ADMIN='adminTB';
+let ADMIN_PWS={}; // {nom: contrasenya} — un Admin, una contrasenya pròpia, assignada pel Master
+let myAdminPw=''; // contrasenya amb la qual l'Admin actual ha entrat (per detectar revocacions)
+let authedAs=''; // nom amb el qual s'ha superat el checkPw() actual
 let adminLevel=''; // '' | 'admin' | 'master'
 let A=['Admin'];
 let G=['JE','JR','OG'];
@@ -639,7 +642,7 @@ function resguardTd(d){
 function render(){
   rebuildRoleBtns();
 
-  const hints={a:adminLevel?'Admin autenticat — edició completa.':'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
+  const hints={a:adminLevel==='master'?'Master autenticat — edició completa i gestió d\'admins.':adminLevel==='admin'?`Admin ${cU} autenticat — edició completa.`:'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
     t:`Tramitador ${cU} — editeu les vostres fitxes.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`};
   document.getElementById('hint').textContent=hints[cT]||'';
 
@@ -830,6 +833,7 @@ function renderSchCupo(){
    9. FILTRES
 ═══════════════════════════════════════════════ */
 function setU(u,t){
+  if(t==='a'&&u!==authedAs){adminLevel='';myAdminPw='';} // canviar a una altra identitat d'Admin obliga a re-autenticar-se
   cU=u;cT=t;fWeb=false;fHora=false;
   document.getElementById('btnWeb').classList.remove('active');
   document.getElementById('btnHora').classList.remove('active');
@@ -887,16 +891,24 @@ function togglePanel(id){
 function closeAllPanels(fromLlistes){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
   document.getElementById('overlay').classList.remove('open');
-  if(fromLlistes){adminLevel='';render();}
+  if(fromLlistes){adminLevel='';myAdminPw='';authedAs='';render();}
 }
 function checkPw(){
   const v=document.getElementById('pw-inp').value;
-  if(v===ADMIN_PW_MASTER) adminLevel='master';
-  else if(v===ADMIN_PW_ADMIN) adminLevel='admin';
-  else{
-    document.getElementById('pw-err').style.display='inline';
-    document.getElementById('pw-inp').value='';
-    return;
+  if(cU==='Admin'){
+    if(v!==ADMIN_PW_MASTER){
+      document.getElementById('pw-err').style.display='inline';
+      document.getElementById('pw-inp').value='';
+      return;
+    }
+    adminLevel='master';myAdminPw=v;authedAs=cU;
+  }else{
+    if(!ADMIN_PWS[cU]||v!==ADMIN_PWS[cU]){
+      document.getElementById('pw-err').style.display='inline';
+      document.getElementById('pw-inp').value='';
+      return;
+    }
+    adminLevel='admin';myAdminPw=v;authedAs=cU;
   }
   document.getElementById('pw-err').style.display='none';
   document.getElementById('pw-inp').style.display='none';
@@ -908,7 +920,7 @@ function renderAdminList(){
   const canEdit=adminLevel==='master';
   document.getElementById('admin-list').innerHTML=A.map((u,i)=>`<div class="admin-item">
     <span>${u}</span>
-    ${canEdit?(i>0?`<button class="llista-del" onclick="removeAdmin('${u}')">×</button>`:'<span style="font-size:8pt;color:#aaa">principal</span>'):''}
+    ${canEdit?(i>0?`<button class="llista-del" title="Canviar contrasenya" onclick="resetAdminPw('${u}')" style="border:none;background:none;cursor:pointer;font-size:11pt;margin-right:4px">🔑</button><button class="llista-del" title="Eliminar" onclick="removeAdmin('${u}')">×</button>`:'<span style="font-size:8pt;color:#aaa">principal (Master)</span>'):''}
   </div>`).join('');
   const az=document.getElementById('admin-add-zone');
   const pz=document.getElementById('admin-pw-change-zone');
@@ -918,15 +930,25 @@ function renderAdminList(){
 async function addAdmin(){
   if(adminLevel!=='master')return;
   const v=document.getElementById('new-admin').value.trim();
-  if(!v||A.includes(v))return;
-  A.push(v);document.getElementById('new-admin').value='';rebuildAdminBtns();renderAdminList();
-  try{await sbAddAdmin(v);}catch(e){showError(e.message);}
+  const pw=document.getElementById('new-admin-pw').value.trim();
+  if(!v||!pw||A.includes(v))return;
+  A.push(v);ADMIN_PWS[v]=pw;
+  document.getElementById('new-admin').value='';document.getElementById('new-admin-pw').value='';
+  rebuildAdminBtns();renderAdminList();
+  try{await sbAddAdmin(v,pw);}catch(e){showError(e.message);}
 }
 async function removeAdmin(u){
   if(adminLevel!=='master')return;
   if(A.length<=1)return;
-  A=A.filter(x=>x!==u);rebuildAdminBtns();renderAdminList();
+  A=A.filter(x=>x!==u);delete ADMIN_PWS[u];rebuildAdminBtns();renderAdminList();
   try{await sbRemoveAdmin(u);}catch(e){showError(e.message);}
+}
+async function resetAdminPw(u){
+  if(adminLevel!=='master')return;
+  const v=prompt(`Nova contrasenya per a ${u}:`);
+  if(!v)return;
+  ADMIN_PWS[u]=v;
+  try{await sbSetAdminPassword(u,v);showSaved();}catch(e){showError(e.message);}
 }
 function changePw(){
   if(adminLevel!=='master')return;
@@ -1031,14 +1053,17 @@ async function sbDelete(id){
 }
 
 async function sbGetAdmins(){
-  const res=await neonQuery(`SELECT name FROM admins ORDER BY id ASC`);
-  return res.rows.map(r=>r.name);
+  const res=await neonQuery(`SELECT name,password FROM admins ORDER BY id ASC`);
+  return res.rows;
 }
-async function sbAddAdmin(name){
-  await neonQuery(`INSERT INTO admins(name) VALUES ($1) ON CONFLICT (name) DO NOTHING`,[name]);
+async function sbAddAdmin(name,password){
+  await neonQuery(`INSERT INTO admins(name,password) VALUES ($1,$2) ON CONFLICT (name) DO UPDATE SET password=$2`,[name,password]);
 }
 async function sbRemoveAdmin(name){
   await neonQuery(`DELETE FROM admins WHERE name=$1`,[name]);
+}
+async function sbSetAdminPassword(name,password){
+  await neonQuery(`UPDATE admins SET password=$1 WHERE name=$2`,[password,name]);
 }
 
 function rowToSb(d){
@@ -1089,8 +1114,9 @@ async function init(){
     render(); // mostra buit si falla
   }
   try{
-    const adminNames=await sbGetAdmins();
-    A=['Admin',...adminNames];
+    const admins=await sbGetAdmins();
+    A=['Admin',...admins.map(x=>x.name)];
+    ADMIN_PWS={};admins.forEach(x=>ADMIN_PWS[x.name]=x.password);
     rebuildAdminBtns();
   }catch(e){
     console.error('Error carregant llista d\'admins:',e);
@@ -1202,10 +1228,17 @@ setInterval(async()=>{
     }
   }catch(e){console.warn('Polling error:',e);}
   try{
-    const adminNames=await sbGetAdmins();
-    const nouA=['Admin',...adminNames];
-    if(JSON.stringify(nouA)!==JSON.stringify(A)){
-      A=nouA;
+    const admins=await sbGetAdmins();
+    const nouA=['Admin',...admins.map(x=>x.name)];
+    const nouPws={};admins.forEach(x=>nouPws[x.name]=x.password);
+    // Revocació en calent: si el Master ha eliminat aquest admin o li ha canviat la contrasenya, es tanca la sessió
+    if(cT==='a'&&cU!=='Admin'&&adminLevel&&(!nouA.includes(cU)||nouPws[cU]!==myAdminPw)){
+      adminLevel='';myAdminPw='';authedAs='';cU='Admin';cT='a';
+      A=nouA;ADMIN_PWS=nouPws;
+      rebuildAdminBtns();render();
+      alert('El Master t\'ha revocat l\'accés d\'Admin.');
+    }else if(JSON.stringify(nouA)!==JSON.stringify(A)||JSON.stringify(nouPws)!==JSON.stringify(ADMIN_PWS)){
+      A=nouA;ADMIN_PWS=nouPws;
       rebuildAdminBtns();
       if(document.getElementById('panel-admin').classList.contains('open'))renderAdminList();
     }

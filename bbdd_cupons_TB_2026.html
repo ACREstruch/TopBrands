@@ -87,16 +87,19 @@ thead th{position:sticky;top:0;z-index:3;background:#D9E1F2;}
 thead tr:nth-child(2) th{top:28px;}
 
 /* Sticky columnes fixes: ×(22) KAM(52) Empresa(195) Nova(36) Cupó(68) */
+/* Els valors --stick* es recalculen dinàmicament (JS) a partir de l'amplada real
+   renderitzada, per evitar desquadraments per arrodoniment de subpíxel amb zoom. */
+:root{--stick1:0px;--stick2:22px;--stick3:74px;--stick4:269px;--stick5:305px;}
 td:first-child, thead tr:first-child th:nth-child(1)
-  {position:sticky;left:0;z-index:4;background:#D9E1F2;}
+  {position:sticky;left:var(--stick1);z-index:4;background:#D9E1F2;}
 td.cg, thead tr:first-child th:nth-child(2)
-  {position:sticky;left:22px;z-index:4;background:#D9E1F2;}
+  {position:sticky;left:var(--stick2);z-index:4;background:#D9E1F2;}
 td.cemp, thead tr:first-child th:nth-child(3)
-  {position:sticky;left:74px;z-index:4;background:#D9E1F2;}
+  {position:sticky;left:var(--stick3);z-index:4;background:#D9E1F2;}
 td.cnov, thead tr:first-child th:nth-child(4)
-  {position:sticky;left:269px;z-index:4;background:#D9E1F2;}
+  {position:sticky;left:var(--stick4);z-index:4;background:#D9E1F2;}
 td.ccup, thead tr:first-child th:nth-child(5)
-  {position:sticky;left:305px;z-index:4;background:#D9E1F2;border-left:1px solid #ddd;}
+  {position:sticky;left:var(--stick5);z-index:4;background:#D9E1F2;border-left:1px solid #ddd;}
 td.cg, td.cemp, td.cnov, td.ccup, td:first-child{background:#fff;z-index:2;}
 td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;}
 
@@ -808,6 +811,7 @@ function render(){
       }
     });
     adjustTableHeight();
+    updateStickyOffsets();
   });
 }
 function adjustTableHeight(){
@@ -817,9 +821,21 @@ function adjustTableHeight(){
   const avail=window.innerHeight-top-12;
   wrap.style.maxHeight=Math.max(200,avail)+'px';
 }
-window.addEventListener('resize',adjustTableHeight);
+function updateStickyOffsets(){
+  const ths=document.querySelectorAll('thead tr:first-child th');
+  if(ths.length<5)return;
+  const root=document.documentElement.style;
+  let sum=0;
+  root.setProperty('--stick1','0px');
+  for(let i=0;i<4;i++){
+    sum+=ths[i].offsetWidth;
+    root.setProperty('--stick'+(i+2),sum+'px');
+  }
+}
+function adjustLayout(){adjustTableHeight();updateStickyOffsets();}
+window.addEventListener('resize',adjustLayout);
 if(window.ResizeObserver){
-  const headerObs=new ResizeObserver(()=>adjustTableHeight());
+  const headerObs=new ResizeObserver(()=>adjustLayout());
   const topRowEl=document.querySelector('.top-row');
   const hintEl=document.getElementById('hint');
   if(topRowEl)headerObs.observe(topRowEl);

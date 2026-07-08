@@ -419,6 +419,7 @@ let nid=1;
 let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false;
 let notesExpanded=new Set();
+let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
 
 
 /* ═══════════════════════════════════════════════
@@ -638,6 +639,38 @@ function resguardTd(d){
   const canR=d.sit==='COMPLETAT'&&d.presentat&&(cT==='a'||(cT==='p'&&d.pres===cU));
   return `<td class="crsgd webcel" style="${bg}"><input type="checkbox"${d.resguard?' checked':''}${canR?'':' disabled'} onchange="svs(${d.id},'resguard',this.checked)"></td>`;
 }
+function rowHtml(d,isAdmin){
+  return `<tr>
+    <td style="text-align:center;padding:2px">${isAdmin?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold" title="Eliminar">×</button>`:''}</td>
+    <td class="cg">${sel(d,'g',G,d.g)}</td>
+    <td class="cemp">${ec(d,'emp',d.emp)}</td>
+    <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${cT==='a'?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
+    <td class="ccup">${sel(d,'cup',CUPS,d.cup)}</td>
+    <td class="ccon">${ec(d,'cont',d.cont)}</td>
+    <td class="cmob">${ec(d,'mob',d.mob)}</td>
+    <td class="ceml">${ovCell(d.email,ec(d,'email',d.email))}</td>
+    <td class="csit">${sitCell(d)}</td>
+    <td class="creg">${ec(d,'reg',d.reg)}</td>
+    <td class="ctke" style="text-align:center;color:#555">${isAdmin&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
+    <td class="cfq">${selFQ(d,1)}</td><td class="cfd">${ec(d,'f1d',d.f1d)}</td>
+    <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
+    <td class="cfq">${selFQ(d,3)}</td><td class="cfd">${ec(d,'f3d',d.f3d)}</td>
+    ${webCell(d)}
+    <td class="curlweb">${ovCell(d.url_web,ec(d,'url_web',d.url_web))}</td>
+    <td class="curlwebchk">${ovCell(d.url_web_check,ec(d,'url_web_check',d.url_web_check))}</td>
+    ${itaCell(d)}
+    <td class="cfq">${selFH(d)}</td>
+    <td class="chra">${ec(d,'hora',d.hora)}</td>
+    ${presCell(d)}
+    ${presTd(d)}
+    ${resguardTd(d)}
+    <td class="ncell cnot"><div class="notes-wrap${notesExpanded.has(d.id)?' expanded':''}" data-id="${d.id}">${ec(d,'notes',d.notes,true)}<button type="button" class="notes-toggle" onclick="toggleNotes(this)">+</button></div></td>
+  </tr>`;
+}
+function toggleGroup(sit){
+  if(collapsedGroups.has(sit))collapsedGroups.delete(sit);else collapsedGroups.add(sit);
+  render();
+}
 
 function render(){
   rebuildRoleBtns();
@@ -703,32 +736,28 @@ function render(){
   fcs.innerHTML=`<option value="">Tots</option>${CUPS.filter(x=>x).map(x=>`<option value="${x}"${fCup===x?' selected':''}>${x}</option>`).join('')}`;
   fss.innerHTML=`<option value="">Totes</option>${SITS.filter(x=>x).map(x=>`<option value="${x}"${fSit===x?' selected':''}>${x}</option>`).join('')}`;
 
-  document.getElementById('tbody').innerHTML=rows.map(d=>`<tr>
-    <td style="text-align:center;padding:2px">${isAdmin?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold" title="Eliminar">×</button>`:''}</td>
-    <td class="cg">${sel(d,'g',G,d.g)}</td>
-    <td class="cemp">${ec(d,'emp',d.emp)}</td>
-    <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${cT==='a'?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
-    <td class="ccup">${sel(d,'cup',CUPS,d.cup)}</td>
-    <td class="ccon">${ec(d,'cont',d.cont)}</td>
-    <td class="cmob">${ec(d,'mob',d.mob)}</td>
-    <td class="ceml">${ovCell(d.email,ec(d,'email',d.email))}</td>
-    <td class="csit">${sitCell(d)}</td>
-    <td class="creg">${ec(d,'reg',d.reg)}</td>
-    <td class="ctke" style="text-align:center;color:#555">${isAdmin&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
-    <td class="cfq">${selFQ(d,1)}</td><td class="cfd">${ec(d,'f1d',d.f1d)}</td>
-    <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
-    <td class="cfq">${selFQ(d,3)}</td><td class="cfd">${ec(d,'f3d',d.f3d)}</td>
-    ${webCell(d)}
-    <td class="curlweb">${ovCell(d.url_web,ec(d,'url_web',d.url_web))}</td>
-    <td class="curlwebchk">${ovCell(d.url_web_check,ec(d,'url_web_check',d.url_web_check))}</td>
-    ${itaCell(d)}
-    <td class="cfq">${selFH(d)}</td>
-    <td class="chra">${ec(d,'hora',d.hora)}</td>
-    ${presCell(d)}
-    ${presTd(d)}
-    ${resguardTd(d)}
-    <td class="ncell cnot"><div class="notes-wrap${notesExpanded.has(d.id)?' expanded':''}" data-id="${d.id}">${ec(d,'notes',d.notes,true)}<button type="button" class="notes-toggle" onclick="toggleNotes(this)">+</button></div></td>
-  </tr>`).join('');
+  const GROUP_DEFS=[
+    {key:'COMPLETAT',label:'COMPLETAT'},
+    {key:'PROCÉS',label:'PROCÉS'},
+    {key:'POTENCIAL',label:'POTENCIAL'},
+    {key:'FA COMPE',label:'FA COMPE'},
+    {key:'HO DESCARTA',label:'HO DESCARTA'},
+    {key:'NO COMPLEIX',label:'NO COMPLEIX'},
+    {key:'NUL',label:'NUL'},
+    {key:'',label:'Sense estat'},
+  ];
+  let tbodyHtml='';
+  GROUP_DEFS.forEach(g=>{
+    const groupRows=rows.filter(d=>d.sit===g.key);
+    if(!groupRows.length)return;
+    const collapsed=collapsedGroups.has(g.key);
+    const sc=SIT_COLORS[g.key]||{bg:'#eee',fg:'#333'};
+    tbodyHtml+=`<tr class="group-row"><td colspan="27" style="background:${sc.bg||'#eee'};color:${sc.fg||'#333'};cursor:pointer;font-weight:bold;padding:5px 8px" onclick="toggleGroup('${g.key}')">
+      <span style="display:inline-block;width:16px">${collapsed?'▶':'▼'}</span>${g.label} <span style="font-weight:normal;opacity:.8">(${groupRows.length})</span>
+    </td></tr>`;
+    if(!collapsed)tbodyHtml+=groupRows.map(d=>rowHtml(d,isAdmin)).join('');
+  });
+  document.getElementById('tbody').innerHTML=tbodyHtml;
 
   // Ajust top de la 2a fila de capçalera
   requestAnimationFrame(()=>{

@@ -818,6 +818,14 @@ function adjustTableHeight(){
   wrap.style.maxHeight=Math.max(200,avail)+'px';
 }
 window.addEventListener('resize',adjustTableHeight);
+if(window.ResizeObserver){
+  const headerObs=new ResizeObserver(()=>adjustTableHeight());
+  const topRowEl=document.querySelector('.top-row');
+  const hintEl=document.getElementById('hint');
+  if(topRowEl)headerObs.observe(topRowEl);
+  if(hintEl)headerObs.observe(hintEl);
+  headerObs.observe(document.body);
+}
 function toggleNotes(btn){
   const wrap=btn.parentElement;
   const id=+wrap.dataset.id;

@@ -91,6 +91,13 @@ td.ccup, thead tr:first-child th:nth-child(5)
 td.cg, td.cemp, td.cnov, td.ccup, td:first-child{background:#fff;z-index:2;}
 td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 
+/* Plegat de columnes TRAMITACIÓ (columnes 12-21: Omplir/Verificar/Validar Fitxa, Web, URL web, URL web check, ITA) */
+#main-table.tram-collapsed colgroup col:nth-child(n+12):nth-child(-n+21){width:2px!important;min-width:2px!important;max-width:2px!important;}
+#main-table.tram-collapsed thead tr:nth-child(2) th:nth-child(-n+7),
+#main-table.tram-collapsed thead tr:nth-child(3) th:nth-child(-n+6),
+#main-table.tram-collapsed #tbody tr td:nth-child(n+12):nth-child(-n+21){padding:0!important;overflow:hidden;white-space:nowrap;border-left:none;border-right:none;}
+#main-table.tram-collapsed #tram-hdr{letter-spacing:normal;}
+
 /* Amplades de columna */
 .cg  {width:52px;min-width:52px;max-width:52px;}
 .cemp{width:195px;min-width:195px;max-width:195px;text-transform:uppercase;}
@@ -257,7 +264,7 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 
   <!-- TAULA -->
   <div class="table-wrap">
-    <table>
+    <table id="main-table">
       <colgroup>
         <col style="width:22px">
         <col class="cg"><col class="cemp"><col class="cnov"><col class="ccup">
@@ -284,7 +291,7 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
           <th rowspan="3">Estat</th>
           <th rowspan="3">Entrada</th>
           <th rowspan="3">Ticket</th>
-          <th colspan="10" style="background:#2c5aa0;color:#fff;letter-spacing:1px">TRAMITACIÓ</th>
+          <th colspan="10" id="tram-hdr" style="background:#2c5aa0;color:#fff;letter-spacing:1px;cursor:pointer" onclick="toggleTramCols()" title="Plegar/desplegar TRAMITACIÓ">▼ TRAMITACIÓ</th>
           <th colspan="2" style="background:#2c5aa0;color:#fff;letter-spacing:1px">HORA</th>
           <th colspan="3" style="background:#2c5aa0;color:#fff;letter-spacing:1px">PRESENTACIÓ</th>
           <th rowspan="3">Notes</th>
@@ -420,6 +427,12 @@ let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false;
 let notesExpanded=new Set();
 let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
+let tramCollapsed=false;
+function toggleTramCols(){
+  tramCollapsed=!tramCollapsed;
+  document.getElementById('main-table').classList.toggle('tram-collapsed',tramCollapsed);
+  document.getElementById('tram-hdr').textContent=tramCollapsed?'▶':'▼ TRAMITACIÓ';
+}
 
 
 /* ═══════════════════════════════════════════════

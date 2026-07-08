@@ -251,6 +251,14 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
       </div>
     </div>
 
+    <!-- MINI DASHBOARD: EMPRESES NOVES -->
+    <div class="grp nova-grp">
+      <div class="recompte-inner" id="recomptes-nova"></div>
+      <div class="nova-row">
+        <button class="fi-btn" id="btnNova" onclick="toggleNova()">Noves Pendent</button>
+      </div>
+    </div>
+
   </div><!-- fi top-row -->
 
   <div class="hint" id="hint"></div>
@@ -417,7 +425,7 @@ const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padS
 let D=[];
 let nid=1;
 let cU='Admin', cT='a';
-let fCup='', fSit='', fQ='', fWeb=false, fHora=false;
+let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
 let notesExpanded=new Set();
 let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
 
@@ -700,6 +708,7 @@ function render(){
     if(cT==='p'&&(d.pres!==cU||d.sit!=='COMPLETAT'))return false;
     if(fWeb&&d.web==='SI')return false;
     if(fHora&&(d.hora||d.sit!=='COMPLETAT'))return false;
+    if(fNova&&!d.nova)return false;
     if(fCup&&d.cup!==fCup)return false;
     if(fSit&&d.sit!==fSit)return false;
     if(fQ){const q=fQ.toLowerCase();if(!d.emp.toLowerCase().includes(q)&&!d.cont.toLowerCase().includes(q))return false;}
@@ -727,9 +736,11 @@ function render(){
     {l:'FA COMPE',n:cnt['FA COMPE'],bg:'#fff',fg:'#222'},
     {l:'NO COMPLEIX',n:cnt['NO COMPLEIX'],bg:'#fff',fg:'#222'},
     {l:'NUL',n:cnt['NUL'],bg:'#fff',fg:'#222'},
-    {l:'EMPRESES NOVES',n:D.filter(d=>d.nova).length,bg:'#fff',fg:'#222',sep:true},
   ];
-  document.getElementById('recomptes').innerHTML=rc.map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg};${r.sep?'margin-left:14px':''}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+  document.getElementById('recomptes').innerHTML=rc.map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+
+  const novesCount=D.filter(d=>d.nova).length;
+  document.getElementById('recomptes-nova').innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesCount}</span><span class="rc-l">EMPRESES NOVES</span></div>`;
 
   // Actualitzar selectors filtres
   const fcs=document.getElementById('fCupSel');
@@ -877,6 +888,11 @@ function toggleWeb(){
 function toggleHora(){
   fHora=!fHora;
   document.getElementById('btnHora').classList.toggle('active',fHora);
+  render();
+}
+function toggleNova(){
+  fNova=!fNova;
+  document.getElementById('btnNova').classList.toggle('active',fNova);
   render();
 }
 

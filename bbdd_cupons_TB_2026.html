@@ -68,7 +68,13 @@ input,select,button{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;}
 /* ═══════════════════════════════════════
    TAULA PRINCIPAL
 ═══════════════════════════════════════ */
-.table-wrap{overflow:auto;max-height:calc(100vh - 205px);}
+.table-wrap{overflow:auto;max-height:calc(100vh - 205px);scrollbar-width:auto;scrollbar-color:#888 #eee;}
+.table-wrap::-webkit-scrollbar{height:14px;width:14px;}
+.table-wrap::-webkit-scrollbar-track{background:#eee;}
+.table-wrap::-webkit-scrollbar-thumb{background:#888;border-radius:7px;border:3px solid #eee;}
+.table-wrap::-webkit-scrollbar-thumb:hover{background:#555;}
+.scroll-btn{padding:2px 10px;border:1px solid #bbb;background:#f5f5f5;border-radius:3px;cursor:pointer;font-size:9pt;}
+.scroll-btn:hover{background:#e0e8f5;}
 table{border-collapse:separate;border-spacing:0;font-size:9.5pt;}
 th,td{border-right:1px solid #ddd;border-bottom:1px solid #ddd;padding:3px 5px;vertical-align:middle;}
 th:first-child,td:first-child{border-left:1px solid #ddd;}
@@ -264,7 +270,13 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
 
   </div><!-- fi top-row -->
 
-  <div class="hint" id="hint"></div>
+  <div class="hint" id="hint" style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+    <span id="hint-txt"></span>
+    <span style="display:flex;gap:4px">
+      <button class="scroll-btn" onclick="document.querySelector('.table-wrap').scrollBy({left:-400,behavior:'smooth'})" title="Desplaçar a l'esquerra">◀</button>
+      <button class="scroll-btn" onclick="document.querySelector('.table-wrap').scrollBy({left:400,behavior:'smooth'})" title="Desplaçar a la dreta">▶</button>
+    </span>
+  </div>
 
   <!-- TAULA -->
   <div class="table-wrap">
@@ -688,7 +700,7 @@ function render(){
 
   const hints={a:adminLevel==='master'?'Master autenticat — edició completa i gestió d\'admins.':adminLevel==='admin'?`Admin ${cU} autenticat — edició completa.`:'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
     t:`Tramitador ${cU} — editeu les vostres fitxes.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`};
-  document.getElementById('hint').textContent=hints[cT]||'';
+  document.getElementById('hint-txt').textContent=hints[cT]||'';
 
   document.getElementById('btn-nova').style.display=cT==='a'?'inline-block':'none';
   const isAdmin=cT==='a'&&!!adminLevel;

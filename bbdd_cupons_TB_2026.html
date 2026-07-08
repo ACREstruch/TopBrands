@@ -273,13 +273,13 @@ td.ccup, thead tr:first-child th:nth-child(5){border-right:3px solid #E8622A;}
   <div class="hint" id="hint" style="display:flex;align-items:center;gap:8px;justify-content:space-between">
     <span id="hint-txt"></span>
     <span style="display:flex;gap:4px">
-      <button class="scroll-btn" onclick="document.querySelector('.table-wrap').scrollBy({left:-400,behavior:'smooth'})" title="Desplaçar a l'esquerra">◀</button>
-      <button class="scroll-btn" onclick="document.querySelector('.table-wrap').scrollBy({left:400,behavior:'smooth'})" title="Desplaçar a la dreta">▶</button>
+      <button class="scroll-btn" onclick="scrollTable(-400)" title="Desplaçar a l'esquerra">◀</button>
+      <button class="scroll-btn" onclick="scrollTable(400)" title="Desplaçar a la dreta">▶</button>
     </span>
   </div>
 
   <!-- TAULA -->
-  <div class="table-wrap">
+  <div class="table-wrap" id="table-wrap">
     <table>
       <colgroup>
         <col style="width:22px">
@@ -909,6 +909,11 @@ function toggleNova(){
   fNova=!fNova;
   document.getElementById('btnNova').classList.toggle('active',fNova);
   render();
+}
+function scrollTable(px){
+  const w=document.getElementById('table-wrap');
+  if(!w)return;
+  w.scrollLeft=w.scrollLeft+px;
 }
 
 /* ═══════════════════════════════════════════════

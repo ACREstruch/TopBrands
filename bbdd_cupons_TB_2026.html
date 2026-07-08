@@ -807,8 +807,17 @@ function render(){
         btn.style.display=overflow?'inline-block':'none';
       }
     });
+    adjustTableHeight();
   });
 }
+function adjustTableHeight(){
+  const wrap=document.getElementById('table-wrap');
+  if(!wrap)return;
+  const top=wrap.getBoundingClientRect().top;
+  const avail=window.innerHeight-top-12;
+  wrap.style.maxHeight=Math.max(200,avail)+'px';
+}
+window.addEventListener('resize',adjustTableHeight);
 function toggleNotes(btn){
   const wrap=btn.parentElement;
   const id=+wrap.dataset.id;

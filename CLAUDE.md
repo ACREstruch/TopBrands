@@ -43,6 +43,16 @@ pujat correctament a GitHub (o avisa clarament si el push ha fallat).
   llistes KAM/Equip/Web/Hora) es comparteix entre 2026 i 2027 — mateixes
   taules Neon (`admin_config`, `admins`, `app_lists`, `user_pins`), no per
   any.
+- **Pestanya "Requeriments"** (seguiment post-presentació, només Master):
+  `YEAR_CONFIG.reqTable` indica la taula de requeriments de l'any
+  (`requeriments` per 2026, `requeriments_2027` per 2027 — mateix esquema,
+  vinculada per `cupo_id` a `YEAR_CONFIG.table`; només es poden crear
+  requeriments sobre registres COMPLETAT). El catàleg de tipus de
+  requeriment (`requeriment_tipus`) és **compartit** entre anys, com la
+  resta de configuració. Al seleccionar l'empresa en crear un requeriment
+  nou, es mostra i es referencia pel número de Tiquet (més fàcil d'
+  identificar), però el vincle real guardat és l'`id` intern de `cupons`
+  — el Tiquet es recalcula sol i no és fiable com a clau permanent.
 - La base de dades és **Neon (PostgreSQL)**, no Supabase. La connexió es fa
   amb el driver `@neondatabase/serverless` via `import()` dinàmic des de
   `esm.sh`. Cal HTTPS (GitHub Pages) per funcionar — no funciona obrint el

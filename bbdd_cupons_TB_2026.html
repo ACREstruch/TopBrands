@@ -206,6 +206,7 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
   <button class="tab-btn active" onclick="showTab('bbdd')">📋 BBDD</button>
   <button class="tab-btn" onclick="showTab('sch-tickets')">🕐 Schedule — Tickets</button>
   <button class="tab-btn" onclick="showTab('sch-cupo')">🏷️ Schedule — Cupó</button>
+  <button class="tab-btn" onclick="showTab('requeriments')">📄 Requeriments</button>
 </div>
 
 <!-- ═══════════════ TAB BBDD ═══════════════ -->
@@ -373,6 +374,47 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
   </div>
 </div>
 
+<!-- ═══════════════ TAB REQUERIMENTS ═══════════════ -->
+<div id="tab-requeriments" class="tab-content">
+  <div class="top-row">
+    <div class="grp recompte-grp">
+      <div class="nova-row">
+        <button class="btn-action" id="btn-nou-req" onclick="addRequeriment()">+ Nou requeriment</button>
+        <button class="btn-action" id="btn-tipus" onclick="togglePanel('tipus')">⚙ Catàleg de tipus</button>
+      </div>
+    </div>
+  </div>
+  <div class="hint" id="req-hint"></div>
+  <div class="table-wrap" id="req-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Empresa</th>
+          <th>Tiquet</th>
+          <th>Cupó</th>
+          <th>Expedient</th>
+          <th>Tipus</th>
+          <th>Aclariment tècnic</th>
+          <th>Comentaris Back Office</th>
+          <th>Dead line</th>
+          <th>Estat</th>
+          <th>Data presentació</th>
+          <th>Comentaris KAM</th>
+          <th>Kick-off esperat</th>
+          <th>Proposta presentada</th>
+          <th>Data</th>
+          <th>Proposta enviada</th>
+          <th>Data</th>
+          <th>Resolució final</th>
+          <th>Data resolució</th>
+        </tr>
+      </thead>
+      <tbody id="req-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- ═══════════════ OVERLAY ═══════════════ -->
 <div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
 
@@ -414,8 +456,18 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
   <div id="llistes-contingut"></div>
 </div>
 
+<!-- ═══════════════ PANELL CATÀLEG TIPUS REQUERIMENT ═══════════════ -->
+<div class="panel" id="panel-tipus" style="min-width:600px;max-width:700px">
+  <span class="panel-close" onclick="closeAllPanels()">×</span>
+  <h3>⚙ Catàleg de tipus de requeriment</h3>
+  <div id="tipus-contingut"></div>
+  <div style="margin-top:10px">
+    <button onclick="addTipusForm()" style="padding:4px 10px;border:1px solid #bbb;border-radius:4px;cursor:pointer;font-size:9pt;background:#f5f5f5">+ Nou tipus</button>
+  </div>
+</div>
+
 <script>
-const YEAR_CONFIG = { year: 2026, table: 'cupons', strictComplete: false };
+const YEAR_CONFIG = { year: 2026, table: 'cupons', strictComplete: false, reqTable: 'requeriments' };
 </script>
 <script src="app.js"></script>
 </body>

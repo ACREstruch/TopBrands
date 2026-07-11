@@ -44,6 +44,8 @@ let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
 let notesExpanded=new Set();
 let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
+let REQ=[]; // requeriments carregats
+let REQ_TIPUS=[]; // catàleg de tipus de requeriment
 
 
 /* ═══════════════════════════════════════════════
@@ -485,11 +487,12 @@ document.addEventListener('click',()=>document.querySelectorAll('.sit-drop.open,
    7. PESTANYES
 ═══════════════════════════════════════════════ */
 function showTab(id){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','sch-tickets','sch-cupo'][i]===id));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','sch-tickets','sch-cupo','requeriments'][i]===id));
   document.querySelectorAll('.tab-content').forEach(d=>d.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
   if(id==='sch-tickets')renderSchTickets();
   if(id==='sch-cupo')renderSchCupo();
+  if(id==='requeriments')renderRequeriments();
 }
 
 /* ═══════════════════════════════════════════════
@@ -631,6 +634,7 @@ function togglePanel(id){
       setTimeout(()=>document.getElementById('pw-inp').focus(),50);
     }
   }else if(id==='llistes')renderLlistes();
+  else if(id==='tipus'){getRequerimentTipus().then(t=>{REQ_TIPUS=t;renderTipusPanel();});}
   p.classList.add('open');ov.classList.add('open');
 }
 function closeAllPanels(){
@@ -797,6 +801,211 @@ async function setPin(name,pin){
   pins[name]=pin;
   try{await neonQuery(`INSERT INTO user_pins(name,pin) VALUES($1,$2) ON CONFLICT(name) DO UPDATE SET pin=$2`,[name,pin]);}
   catch(e){console.warn('Error desant PIN:',e);}
+}
+
+/* ═══════════════════════════════════════════════
+   15. REQUERIMENTS (seguiment post-presentació)
+═══════════════════════════════════════════════ */
+const REQ_FIELDS=['expedient','tipus_ids','aclariment_tecnic','comentaris_backoffice','dead_line','estat',
+  'data_presentacio','comentaris_kam','kickoff_esperat','proposta_presentada','data_proposta_presentada',
+  'proposta_enviada','data_proposta_enviada','resolucio_final','data_resolucio'];
+const TIPUS_FIELDS=['alies','pregunta','comentari','recurs_nom','recurs_link'];
+
+function isMasterActive(){return cT==='a'&&adminLevel==='master';}
+
+async function getRequeriments(){
+  const res=await neonQuery(`SELECT r.*, c.emp AS c_emp, c.cup AS c_cup, c.tke AS c_tke FROM ${YEAR_CONFIG.reqTable} r LEFT JOIN ${YEAR_CONFIG.table} c ON c.id=r.cupo_id ORDER BY r.id DESC`);
+  return res.rows||[];
+}
+async function getRequerimentTipus(){
+  const res=await neonQuery(`SELECT * FROM requeriment_tipus ORDER BY id`);
+  return res.rows||[];
+}
+async function getCompletatsForSelect(){
+  const res=await neonQuery(`SELECT id, emp, cup, tke FROM ${YEAR_CONFIG.table} WHERE sit='COMPLETAT' ORDER BY emp ASC`);
+  return res.rows||[];
+}
+async function insertRequerimentRow(cupoId){
+  const res=await neonQuery(`INSERT INTO ${YEAR_CONFIG.reqTable} (cupo_id) VALUES ($1) RETURNING id`,[cupoId]);
+  return res.rows?.[0]?.id;
+}
+async function updateRequerimentField(id,f,v){
+  if(!REQ_FIELDS.includes(f))return;
+  await neonQuery(`UPDATE ${YEAR_CONFIG.reqTable} SET ${f}=$1, updated_at=NOW() WHERE id=$2`,[v,id]);
+}
+async function deleteRequerimentRow(id){
+  await neonQuery(`DELETE FROM ${YEAR_CONFIG.reqTable} WHERE id=$1`,[id]);
+}
+async function insertTipusRow(alies,pregunta,comentari,recursNom,recursLink){
+  const res=await neonQuery(`INSERT INTO requeriment_tipus(alies,pregunta,comentari,recurs_nom,recurs_link) VALUES($1,$2,$3,$4,$5) RETURNING id`,[alies,pregunta,comentari,recursNom,recursLink]);
+  return res.rows?.[0]?.id;
+}
+async function updateTipusField(id,f,v){
+  if(!TIPUS_FIELDS.includes(f))return;
+  await neonQuery(`UPDATE requeriment_tipus SET ${f}=$1 WHERE id=$2`,[v,id]);
+}
+async function deleteTipusRow(id){
+  await neonQuery(`DELETE FROM requeriment_tipus WHERE id=$1`,[id]);
+}
+
+function parseTipusIds(v){
+  if(Array.isArray(v))return v;
+  if(typeof v==='string'&&v)return JSON.parse(v);
+  return [];
+}
+function ecReq(r,f,v,multi){
+  return `<span class="ed" contenteditable="true" data-rid="${r.id}" data-rf="${f}" onblur="svReq(this)" onkeydown="if(event.key==='Enter'&&!${!!multi}){event.preventDefault();this.blur()}">${v||''}</span>`;
+}
+async function svReq(el){
+  const id=+el.dataset.rid, f=el.dataset.rf;
+  const v=el.textContent.trim();
+  const r=REQ.find(x=>x.id===id); if(r)r[f]=v;
+  await updateRequerimentField(id,f,v);
+}
+async function svsReq(id,f,v){
+  const r=REQ.find(x=>x.id===id); if(r)r[f]=v;
+  await updateRequerimentField(id,f,v);
+}
+function selReqEstat(r){
+  const opts=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','No aplica'];
+  return `<select onchange="svsReq(${r.id},'estat',this.value)">${opts.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
+}
+function tipusBadges(r){
+  const ids=parseTipusIds(r.tipus_ids);
+  const names=ids.map(tid=>{const t=REQ_TIPUS.find(x=>x.id===tid);return t?t.alies.split(',')[0]:'';}).filter(Boolean);
+  return `<div style="cursor:pointer;min-width:80px" onclick="openTipusPicker(${r.id})">${names.map(n=>`<span style="display:inline-block;background:#EEEDFE;color:#534AB7;border-radius:3px;padding:1px 5px;margin:1px;font-size:8pt">${n}</span>`).join('')||'<span style="color:#aaa;font-size:8pt">+ afegir</span>'}</div>`;
+}
+function openTipusPicker(rid){
+  if(document.getElementById('tipus-picker-dialog'))return;
+  const r=REQ.find(x=>x.id===rid); if(!r)return;
+  const ids=parseTipusIds(r.tipus_ids);
+  const el=document.createElement('div');
+  el.id='tipus-picker-dialog';
+  el.style='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center';
+  el.innerHTML=`<div style="background:#fff;border-radius:8px;padding:20px;max-width:500px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <p style="font-weight:bold;margin-bottom:10px">Tipus de requeriment</p>
+    ${REQ_TIPUS.map(t=>`<label style="display:block;margin-bottom:6px;font-size:9.5pt"><input type="checkbox" value="${t.id}" ${ids.includes(t.id)?'checked':''}> ${t.alies}</label>`).join('')}
+    <div style="text-align:right;margin-top:14px">
+      <button onclick="saveTipusPicker(${rid})" style="padding:5px 14px;border:1px solid #2c5aa0;background:#2c5aa0;color:#fff;border-radius:4px;cursor:pointer">Desar</button>
+      <button onclick="document.getElementById('tipus-picker-dialog').remove()" style="padding:5px 14px;border:1px solid #bbb;border-radius:4px;cursor:pointer;background:#f5f5f5;margin-left:6px">Cancel·lar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+}
+async function saveTipusPicker(rid){
+  const dialog=document.getElementById('tipus-picker-dialog');
+  const ids=[...dialog.querySelectorAll('input[type=checkbox]:checked')].map(x=>+x.value);
+  const r=REQ.find(x=>x.id===rid); if(r)r.tipus_ids=ids;
+  dialog.remove();
+  renderRequerimentsTable();
+  await updateRequerimentField(rid,'tipus_ids',JSON.stringify(ids));
+}
+async function addRequeriment(){
+  if(!isMasterActive())return;
+  if(document.getElementById('nou-req-dialog'))return;
+  const completats=await getCompletatsForSelect();
+  const el=document.createElement('div');
+  el.id='nou-req-dialog';
+  el.style='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center';
+  el.innerHTML=`<div style="background:#fff;border-radius:8px;padding:20px;min-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <p style="font-weight:bold;margin-bottom:10px">Nou requeriment — tria l'empresa/cupó (només COMPLETATS)</p>
+    <select id="nou-req-sel" style="width:100%;padding:5px">
+      ${completats.map(c=>`<option value="${c.id}">${c.emp} — ${c.cup} (Tiquet ${c.tke||'—'})</option>`).join('')}
+    </select>
+    <div style="text-align:right;margin-top:14px">
+      <button onclick="confirmNouReq()" style="padding:5px 14px;border:1px solid #2c5aa0;background:#2c5aa0;color:#fff;border-radius:4px;cursor:pointer">Crear</button>
+      <button onclick="document.getElementById('nou-req-dialog').remove()" style="padding:5px 14px;border:1px solid #bbb;border-radius:4px;cursor:pointer;background:#f5f5f5;margin-left:6px">Cancel·lar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+}
+async function confirmNouReq(){
+  const sel=document.getElementById('nou-req-sel');
+  const cupoId=+sel.value;
+  document.getElementById('nou-req-dialog').remove();
+  await insertRequerimentRow(cupoId);
+  renderRequeriments();
+}
+async function delRequerimentRow(id){
+  if(!confirm('Eliminar aquest requeriment?'))return;
+  await deleteRequerimentRow(id);
+  REQ=REQ.filter(x=>x.id!==id);
+  renderRequerimentsTable();
+}
+function reqRowHtml(r){
+  return `<tr>
+    <td style="text-align:center"><button onclick="delRequerimentRow(${r.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:13pt" title="Eliminar">×</button></td>
+    <td>${r.c_emp||''}</td>
+    <td style="text-align:center">${r.c_tke||''}</td>
+    <td style="text-align:center">${r.c_cup||''}</td>
+    <td>${ecReq(r,'expedient',r.expedient)}</td>
+    <td>${tipusBadges(r)}</td>
+    <td class="ncell">${ecReq(r,'aclariment_tecnic',r.aclariment_tecnic,true)}</td>
+    <td class="ncell">${ecReq(r,'comentaris_backoffice',r.comentaris_backoffice,true)}</td>
+    <td>${ecReq(r,'dead_line',r.dead_line)}</td>
+    <td>${selReqEstat(r)}</td>
+    <td>${ecReq(r,'data_presentacio',r.data_presentacio)}</td>
+    <td class="ncell">${ecReq(r,'comentaris_kam',r.comentaris_kam,true)}</td>
+    <td class="ncell">${ecReq(r,'kickoff_esperat',r.kickoff_esperat,true)}</td>
+    <td>${ecReq(r,'proposta_presentada',r.proposta_presentada)}</td>
+    <td>${ecReq(r,'data_proposta_presentada',r.data_proposta_presentada)}</td>
+    <td>${ecReq(r,'proposta_enviada',r.proposta_enviada)}</td>
+    <td>${ecReq(r,'data_proposta_enviada',r.data_proposta_enviada)}</td>
+    <td>${ecReq(r,'resolucio_final',r.resolucio_final)}</td>
+    <td>${ecReq(r,'data_resolucio',r.data_resolucio)}</td>
+  </tr>`;
+}
+function renderRequerimentsTable(){
+  document.getElementById('req-tbody').innerHTML=REQ.map(r=>reqRowHtml(r)).join('');
+}
+async function renderRequeriments(){
+  const master=isMasterActive();
+  const wrap=document.getElementById('req-table-wrap');
+  const hint=document.getElementById('req-hint');
+  const btnNou=document.getElementById('btn-nou-req');
+  const btnTipus=document.getElementById('btn-tipus');
+  if(btnNou)btnNou.style.display=master?'inline-block':'none';
+  if(btnTipus)btnTipus.style.display=master?'inline-block':'none';
+  if(!master){
+    hint.textContent='Aquesta secció només la pot gestionar el Master.';
+    wrap.style.display='none';
+    return;
+  }
+  hint.textContent='Seguiment de requeriments post-presentació (només registres COMPLETAT).';
+  wrap.style.display='block';
+  const[reqs,tipus]=await Promise.all([getRequeriments(),getRequerimentTipus()]);
+  REQ=reqs;REQ_TIPUS=tipus;
+  renderRequerimentsTable();
+}
+function renderTipusPanel(){
+  document.getElementById('tipus-contingut').innerHTML=REQ_TIPUS.map(t=>`
+    <div style="border-bottom:1px solid #eee;padding:8px 0">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+        <input type="text" value="${t.alies}" style="flex:1;font-weight:bold;border:1px solid #ccc;border-radius:3px;padding:3px 5px" onchange="updateTipusFieldUI(${t.id},'alies',this.value)">
+        <button class="llista-del" onclick="delTipusUI(${t.id})">×</button>
+      </div>
+      <textarea style="width:100%;margin-top:4px;font-size:9pt" rows="2" placeholder="Pregunta/requeriment" onchange="updateTipusFieldUI(${t.id},'pregunta',this.value)">${t.pregunta||''}</textarea>
+      <textarea style="width:100%;margin-top:4px;font-size:9pt" rows="2" placeholder="Comentari/aclariment" onchange="updateTipusFieldUI(${t.id},'comentari',this.value)">${t.comentari||''}</textarea>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <input type="text" placeholder="Nom recurs" value="${t.recurs_nom||''}" style="flex:1;font-size:9pt;border:1px solid #ccc;border-radius:3px;padding:3px 5px" onchange="updateTipusFieldUI(${t.id},'recurs_nom',this.value)">
+        <input type="text" placeholder="Link recurs" value="${t.recurs_link||''}" style="flex:2;font-size:9pt;border:1px solid #ccc;border-radius:3px;padding:3px 5px" onchange="updateTipusFieldUI(${t.id},'recurs_link',this.value)">
+      </div>
+    </div>`).join('');
+}
+async function updateTipusFieldUI(id,f,v){
+  const t=REQ_TIPUS.find(x=>x.id===id); if(t)t[f]=v;
+  await updateTipusField(id,f,v);
+}
+async function delTipusUI(id){
+  if(!confirm('Eliminar aquest tipus del catàleg?'))return;
+  await deleteTipusRow(id);
+  REQ_TIPUS=REQ_TIPUS.filter(x=>x.id!==id);
+  renderTipusPanel();
+}
+async function addTipusForm(){
+  const id=await insertTipusRow('Nou tipus','','','','');
+  REQ_TIPUS=await getRequerimentTipus();
+  renderTipusPanel();
 }
 
 async function sbGet(){

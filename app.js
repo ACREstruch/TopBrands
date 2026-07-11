@@ -814,7 +814,7 @@ const TIPUS_FIELDS=['alies','pregunta','comentari','recurs_nom','recurs_link'];
 function isMasterActive(){return cT==='a'&&adminLevel==='master';}
 
 async function getRequeriments(){
-  const res=await neonQuery(`SELECT r.*, c.emp AS c_emp, c.cup AS c_cup, c.tke AS c_tke FROM ${YEAR_CONFIG.reqTable} r LEFT JOIN ${YEAR_CONFIG.table} c ON c.id=r.cupo_id ORDER BY r.id DESC`);
+  const res=await neonQuery(`SELECT r.*, c.emp AS c_emp, c.cup AS c_cup, c.tke AS c_tke FROM ${YEAR_CONFIG.reqTable} r LEFT JOIN ${YEAR_CONFIG.table} c ON c.id=r.cupo_id ORDER BY r.id ASC`);
   return res.rows||[];
 }
 async function getRequerimentTipus(){

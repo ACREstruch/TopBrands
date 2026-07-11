@@ -232,6 +232,14 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
           <span class="rbl">Presentadors</span>
           <div class="rnames" id="rbP"></div>
         </div>
+        <div class="role-block">
+          <span class="rbl">Web</span>
+          <div class="rnames" id="rbW"></div>
+        </div>
+        <div class="role-block">
+          <span class="rbl">Hora</span>
+          <div class="rnames" id="rbH"></div>
+        </div>
       </div>
       <div class="filter-row">
         <div class="fi"><label>Cupó</label>
@@ -291,8 +299,9 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
         <col class="csit"><col class="creg"><col class="ctke">
         <col class="cfq"><col class="cfd">
         <col class="cfq"><col class="cfd">
+        <col class="cita">
+        <col class="cfq"><col class="cweb"><col class="curlweb"><col class="curlwebchk">
         <col class="cfq"><col class="cfd">
-        <col class="cweb"><col class="curlweb"><col class="curlwebchk"><col class="cita">
         <col class="cfq"><col class="chra">
         <col class="cpres"><col class="cpret"><col class="crsgd">
         <col class="cnot">
@@ -310,7 +319,9 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
           <th rowspan="3">Estat</th>
           <th rowspan="3">Entrada</th>
           <th rowspan="3">Ticket</th>
-          <th colspan="10" style="background:#2c5aa0;color:#fff;letter-spacing:1px">TRAMITACIÓ</th>
+          <th colspan="5" style="background:#2c5aa0;color:#fff;letter-spacing:1px">TRAMITACIÓ</th>
+          <th colspan="4" style="background:#7B4FA3;color:#fff;letter-spacing:1px">WEB</th>
+          <th colspan="2" style="background:#2c5aa0;color:#fff;letter-spacing:1px">VALIDACIÓ</th>
           <th colspan="2" style="background:#2c5aa0;color:#fff;letter-spacing:1px">HORA</th>
           <th colspan="3" style="background:#2c5aa0;color:#fff;letter-spacing:1px">PRESENTACIÓ</th>
           <th rowspan="3">Notes</th>
@@ -318,11 +329,12 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
         <tr>
           <th colspan="2" style="border-bottom:none">Omplir Fitxa</th>
           <th colspan="2" style="border-bottom:none">Verificar Fitxa</th>
-          <th colspan="2" style="border-bottom:none">Validar Fitxa</th>
+          <th rowspan="2">ITA<br><span style="font-weight:normal">(solo IA)</span></th>
+          <th rowspan="2">Qui</th>
           <th rowspan="2">Web</th>
           <th rowspan="2">URL web</th>
           <th rowspan="2">URL web check</th>
-          <th rowspan="2">ITA<br><span style="font-weight:normal">(solo IA)</span></th>
+          <th colspan="2" style="border-bottom:none">Validar Fitxa</th>
           <th colspan="2" style="border-bottom:none">Validar Hora</th>
           <th rowspan="2">Presentador</th>
           <th rowspan="2">Presentat</th>
@@ -415,10 +427,10 @@ let A=['Admin'];
 let pins={}; // {nom Tramitador/Presentador: PIN}
 let unlockedNames=new Set(); // noms desbloquejats amb PIN durant aquesta sessió
 let G=['JE','JR','OG'];
-let T=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL'];
-let P=[...T];
+let T=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL']; // Equip: genera els botons TRM i PRT
 let TF3=[...T];
-let TFH=['AG'];
+let TFH=['AG']; // Equip Hora: genera el botó del rol Hora
+let QW=[...T]; // Equip Web: genera el botó del rol Web
 let WEBLIST=['SI','NO','SBY','PROB'];
 let CUPS=['','CEXP','PI','EC','IA'];
 let SITS=['','COMPLETAT','PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'];
@@ -568,7 +580,7 @@ function delRow_placeholder(){} // sobreescrita per Supabase
 const HELPER_FIELDS=['emp','cont','mob','email','reg','notes']; // camps que pot tocar un Admin ajudant (no Master)
 function canEd(d,f){
   if(fHora){
-    if(f==='hora')return cT==='a'&&adminLevel==='master'?!!d.fhq:(d.sit==='COMPLETAT'&&!d.hora&&d.fhq===cU);
+    if(f==='hora')return (cT==='a'&&adminLevel==='master')?!!d.fhq:(cT==='h'&&d.sit==='COMPLETAT'&&!d.hora&&d.fhq===cU);
     return false;
   }
   if(cT==='a'){
@@ -581,8 +593,15 @@ function canEd(d,f){
     if(f==='notes')return d.pres===cU;
     return false; // presentat/resguard es gestionen per separat
   }
-  if(cT==='t'){
+  if(cT==='w'){
+    if(f==='url_web'||f==='url_web_check')return d.webq===cU;
+    return false; // el camp "web" el gestiona webCell() directament
+  }
+  if(cT==='h'){
     if(f==='hora')return d.sit==='COMPLETAT'&&!d.hora&&d.fhq===cU;
+    return false;
+  }
+  if(cT==='t'){
     if(f==='notes')return true;
     if(f==='f1d')return d.f1q===cU;
     if(f==='f2d')return d.f2q===cU;
@@ -616,6 +635,10 @@ function selFH(d){
   if(cT!=='a'||adminLevel!=='master')return `<span>${d.fhq||''}</span>`;
   return `<select onchange="svs(${d.id},'fhq',this.value)"><option value=""></option>${TFH.map(x=>`<option${d.fhq===x?' selected':''}>${x}</option>`).join('')}</select>`;
 }
+function selWebQ(d){
+  if(cT!=='a'||adminLevel!=='master')return `<span>${d.webq||''}</span>`;
+  return `<select onchange="svs(${d.id},'webq',this.value)"><option value=""></option>${QW.map(x=>`<option${d.webq===x?' selected':''}>${x}</option>`).join('')}</select>`;
+}
 function sitCell(d){
   const sc=SIT_COLORS[d.sit]||{};
   const bg=sc.bg||'',fg=sc.fg||'#222';
@@ -635,7 +658,8 @@ function itaCell(d){
   const bgStyle=ic.bg?`background:${ic.bg};`:'';
   const label=v||'No aplica';
   if(d.cup!=='IA')return `<td class="cita" style="${bgStyle}color:${ic.fg};text-align:center">${label}</td>`;
-  if(cT!=='a'||adminLevel!=='master')return `<td class="cita" style="${bgStyle}color:${ic.fg};text-align:center">${label}</td>`;
+  const canIta=(cT==='a'&&adminLevel==='master')||(cT==='t'&&(d.f1q===cU||d.f2q===cU||d.f3q===cU));
+  if(!canIta)return `<td class="cita" style="${bgStyle}color:${ic.fg};text-align:center">${label}</td>`;
   const opts=['No aplica','DEMANAR','DEMANAT','REBUT'].map(s=>{
     const key=s==='No aplica'?'':s;
     const c=ITA_COLORS[key]||ITA_COLORS[''];
@@ -650,7 +674,7 @@ function itaCell(d){
 function webCell(d){
   const wc=WEB_COLORS[d.web]||{};
   const bgStyle=wc.bg?`background:${wc.bg};color:${wc.fg};`:'';
-  const canW=(cT==='a'&&adminLevel==='master'&&!fHora)||(cT==='t'&&(d.f1q===cU||d.f2q===cU||d.f3q===cU));
+  const canW=(cT==='a'&&adminLevel==='master'&&!fHora)||(cT==='w'&&d.webq===cU);
   if(!canW)return `<td class="cweb webcel" style="${bgStyle}"><span>${d.web||''}</span></td>`;
   return `<td class="cweb webcel" style="${bgStyle}"><select style="${bgStyle}width:100%" onchange="svs(${d.id},'web',this.value)">
     <option value=""></option>${WEBLIST.map(x=>`<option value="${x}"${d.web===x?' selected':''}>${x}</option>`).join('')}
@@ -658,7 +682,7 @@ function webCell(d){
 }
 function presCell(d){
   if(cT!=='a'||adminLevel!=='master')return `<td class="cpres">${d.pres||''}</td>`;
-  return `<td class="cpres"><select onchange="svs(${d.id},'pres',this.value)"><option value=""></option>${P.map(x=>`<option${d.pres===x?' selected':''}>${x}</option>`).join('')}</select></td>`;
+  return `<td class="cpres"><select onchange="svs(${d.id},'pres',this.value)"><option value=""></option>${T.map(x=>`<option${d.pres===x?' selected':''}>${x}</option>`).join('')}</select></td>`;
 }
 function presTd(d){
   const canP=d.sit==='COMPLETAT'&&d.pres&&((cT==='a'&&adminLevel==='master')||(cT==='p'&&d.pres===cU));
@@ -684,11 +708,12 @@ function rowHtml(d,isMaster){
     <td class="ctke" style="text-align:center;color:#555">${isMaster&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
     <td class="cfq">${selFQ(d,1)}</td><td class="cfd">${ec(d,'f1d',d.f1d)}</td>
     <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
-    <td class="cfq">${selFQ(d,3)}</td><td class="cfd">${ec(d,'f3d',d.f3d)}</td>
+    ${itaCell(d)}
+    <td class="cfq">${selWebQ(d)}</td>
     ${webCell(d)}
     <td class="curlweb">${ovCell(d.url_web,ec(d,'url_web',d.url_web))}</td>
     <td class="curlwebchk">${ovCell(d.url_web_check,ec(d,'url_web_check',d.url_web_check))}</td>
-    ${itaCell(d)}
+    <td class="cfq">${selFQ(d,3)}</td><td class="cfd">${ec(d,'f3d',d.f3d)}</td>
     <td class="cfq">${selFH(d)}</td>
     <td class="chra">${ec(d,'hora',d.hora)}</td>
     ${presCell(d)}
@@ -706,7 +731,8 @@ function render(){
   rebuildRoleBtns();
 
   const hints={a:adminLevel==='master'?'Master autenticat — edició completa i gestió d\'admins.':adminLevel==='admin'?`Admin ${cU} — creació de registres i dades bàsiques.`:'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
-    t:`Tramitador ${cU} — editeu les vostres fitxes.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`};
+    t:`Tramitador ${cU} — editeu les vostres fitxes i l'ITA.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`,
+    w:`Gestor Web ${cU} — editeu Web, URL web i URL web check.`,h:`Gestor Hora ${cU} — editeu la Validar Hora.`};
   document.getElementById('hint-txt').textContent=hints[cT]||'';
 
   document.getElementById('btn-nova').style.display=cT==='a'?'inline-block':'none';
@@ -725,9 +751,11 @@ function render(){
 
   let rows=D.filter(d=>{
     if(cT==='g'&&d.g!==cU)return false;
-    if(cT==='t'&&(d.f1q!==cU&&d.f2q!==cU&&d.f3q!==cU&&d.fhq!==cU))return false;
+    if(cT==='t'&&(d.f1q!==cU&&d.f2q!==cU&&d.f3q!==cU))return false;
     if(cT==='t'&&!['COMPLETAT','PROCÉS'].includes(d.sit))return false;
     if(cT==='p'&&(d.pres!==cU||d.sit!=='COMPLETAT'))return false;
+    if(cT==='w'&&d.webq!==cU)return false;
+    if(cT==='h'&&(d.fhq!==cU||d.sit!=='COMPLETAT'))return false;
     if(fWeb&&d.web==='SI')return false;
     if(fHora&&(d.hora||d.sit!=='COMPLETAT'))return false;
     if(fNova&&!d.nova)return false;
@@ -786,7 +814,7 @@ function render(){
     if(!groupRows.length)return;
     const collapsed=collapsedGroups.has(g.key);
     const sc=SIT_COLORS[g.key]||{bg:'#eee',fg:'#333'};
-    tbodyHtml+=`<tr class="group-row"><td colspan="27" style="background:${sc.bg||'#eee'};color:${sc.fg||'#333'};cursor:pointer;font-weight:bold;padding:5px 8px" onclick="toggleGroup('${g.key}')">
+    tbodyHtml+=`<tr class="group-row"><td colspan="28" style="background:${sc.bg||'#eee'};color:${sc.fg||'#333'};cursor:pointer;font-weight:bold;padding:5px 8px" onclick="toggleGroup('${g.key}')">
       <span style="display:inline-block;width:16px">${collapsed?'▶':'▼'}</span>${g.label} <span style="font-weight:normal;opacity:.8">(${groupRows.length})</span>
     </td></tr>`;
     if(!collapsed)tbodyHtml+=groupRows.map(d=>rowHtml(d,isMaster)).join('');
@@ -900,7 +928,7 @@ function schCell(d){
   </div>`;
 }
 function renderSchTickets(){
-  const presos=P.filter(p=>D.some(d=>d.pres===p&&d.sit==='COMPLETAT'));
+  const presos=T.filter(p=>D.some(d=>d.pres===p&&d.sit==='COMPLETAT'));
   document.getElementById('sch-tickets-head').innerHTML=`<tr><th>Hora</th>${presos.map(p=>`<th>${p}</th>`).join('')}</tr>`;
   document.getElementById('sch-tickets-body').innerHTML=SCH_HORES.map(h=>{
     const cells=presos.map(p=>{
@@ -927,7 +955,7 @@ function renderSchCupo(){
 ═══════════════════════════════════════════════ */
 function setU(u,t){
   if(t==='a'&&u!==authedAs){adminLevel='';myAdminPw='';} // canviar a una altra identitat d'Admin obliga a re-autenticar-se
-  if((t==='t'||t==='p')&&pins[u]&&!unlockedNames.has(u)){
+  if((t==='t'||t==='p'||t==='w'||t==='h')&&pins[u]&&!unlockedNames.has(u)){
     promptPin(u,t);
     return;
   }
@@ -992,7 +1020,9 @@ function rebuildRoleBtns(){
   document.getElementById('rbA').innerHTML=A.map(u=>`<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
   document.getElementById('rbG').innerHTML=G.map(u=>`<button class="rbtn${u===cU&&cT==='g'?' active':''}" onclick="setU('${u}','g')">${u}</button>`).join('');
   document.getElementById('rbT').innerHTML=T.map(u=>`<button class="rbtn${u===cU&&cT==='t'?' active':''}" onclick="setU('${u}','t')">${u}</button>`).join('');
-  document.getElementById('rbP').innerHTML=P.map(u=>`<button class="rbtn${u===cU&&cT==='p'?' active':''}" onclick="setU('${u}','p')">${u}</button>`).join('');
+  document.getElementById('rbP').innerHTML=T.map(u=>`<button class="rbtn${u===cU&&cT==='p'?' active':''}" onclick="setU('${u}','p')">${u}</button>`).join('');
+  document.getElementById('rbW').innerHTML=QW.map(u=>`<button class="rbtn${u===cU&&cT==='w'?' active':''}" onclick="setU('${u}','w')">${u}</button>`).join('');
+  document.getElementById('rbH').innerHTML=TFH.map(u=>`<button class="rbtn${u===cU&&cT==='h'?' active':''}" onclick="setU('${u}','h')">${u}</button>`).join('');
 }
 function rebuildAdminBtns(){
   document.getElementById('rbA').innerHTML=A.map(u=>`<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
@@ -1100,19 +1130,19 @@ async function changePw(){
 function renderLlistes(){
   const llistes=[
     {title:'KAM',arr:G,key:'g',note:''},
-    {title:'Tramitadors',arr:T,key:'t',note:'(= Qui Omplir)'},
-    {title:'Presentadors',arr:P,key:'pre',note:''},
+    {title:'Equip',arr:T,key:'t',note:'(Tramitadors/Presentadors = Qui Omplir)'},
+    {title:'Gestor Web',arr:QW,key:'qw',note:'(= Qui Web)'},
+    {title:'Gestor Hora',arr:TFH,key:'tfh',note:'(= Qui Hora)'},
     {title:'Cupons',arr:CUPS.filter(x=>x),key:'c',note:''},
     {title:'Estats',arr:SITS.filter(x=>x),key:'s',note:''},
     {title:'Web',arr:WEBLIST,key:'web',note:''},
     {title:'Qui — Valid.',arr:TF3,key:'tf3',note:'(llista pròpia)'},
-    {title:'Qui — Hora',arr:TFH,key:'tfh',note:'(llista pròpia)'},
   ];
   document.getElementById('llistes-contingut').innerHTML=llistes.map(l=>`
     <div class="llista-grp">
       <h4>${l.title} <span style="font-weight:normal;color:#aaa">${l.note}</span></h4>
       ${l.arr.map(v=>{
-        const pinField=(l.key==='t'||l.key==='pre')?`<input type="text" value="${pins[v]||''}" placeholder="PIN" style="width:52px;border:1px solid #ccc;border-radius:3px;padding:1px 4px;font-size:8.5pt;margin-right:4px" onchange="setPin('${v}',this.value.trim())">`:'';
+        const pinField=(l.key==='t'||l.key==='qw'||l.key==='tfh')?`<input type="text" value="${pins[v]||''}" placeholder="PIN" style="width:52px;border:1px solid #ccc;border-radius:3px;padding:1px 4px;font-size:8.5pt;margin-right:4px" onchange="setPin('${v}',this.value.trim())">`:'';
         return `<div class="llista-item"><span>${v}</span><span style="display:flex;align-items:center">${pinField}<button class="llista-del" onclick="removeFromList('${l.key}','${v}')">×</button></span></div>`;
       }).join('')}
       <div class="llista-add">
@@ -1128,12 +1158,12 @@ function addToList(key){
   let arr=null;
   if(key==='g'&&!G.includes(v)){G.push(v);arr=G;}
   else if(key==='t'&&!T.includes(v)){T.push(v);rebuildRoleBtns();arr=T;}
-  else if(key==='pre'&&!P.includes(v)){P.push(v);rebuildRoleBtns();arr=P;}
+  else if(key==='qw'&&!QW.includes(v)){QW.push(v);rebuildRoleBtns();arr=QW;}
   else if(key==='c'&&!CUPS.includes(v)){CUPS.push(v);arr=CUPS;}
   else if(key==='s'&&!SITS.includes(v)){SITS.push(v);arr=SITS;}
   else if(key==='web'&&!WEBLIST.includes(v)){WEBLIST.push(v);arr=WEBLIST;}
   else if(key==='tf3'&&!TF3.includes(v)){TF3.push(v);arr=TF3;}
-  else if(key==='tfh'&&!TFH.includes(v)){TFH.push(v);arr=TFH;}
+  else if(key==='tfh'&&!TFH.includes(v)){TFH.push(v);rebuildRoleBtns();arr=TFH;}
   el.value='';renderLlistes();render();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
@@ -1141,12 +1171,12 @@ function removeFromList(key,v){
   let arr=null;
   if(key==='g'){G=G.filter(x=>x!==v);arr=G;}
   else if(key==='t'){T=T.filter(x=>x!==v);rebuildRoleBtns();arr=T;}
-  else if(key==='pre'){P=P.filter(x=>x!==v);rebuildRoleBtns();arr=P;}
+  else if(key==='qw'){QW=QW.filter(x=>x!==v);rebuildRoleBtns();arr=QW;}
   else if(key==='c'){CUPS=CUPS.filter(x=>x!==v&&x!=='');if(!CUPS.includes(''))CUPS.unshift('');arr=CUPS;}
   else if(key==='s'){SITS=SITS.filter(x=>x!==v&&x!=='');if(!SITS.includes(''))SITS.unshift('');arr=SITS;}
   else if(key==='web'){WEBLIST=WEBLIST.filter(x=>x!==v);arr=WEBLIST;}
   else if(key==='tf3'){TF3=TF3.filter(x=>x!==v);arr=TF3;}
-  else if(key==='tfh'){TFH=TFH.filter(x=>x!==v);arr=TFH;}
+  else if(key==='tfh'){TFH=TFH.filter(x=>x!==v);rebuildRoleBtns();arr=TFH;}
   renderLlistes();render();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
@@ -1194,8 +1224,8 @@ async function sbGet(){
 async function sbInsert(d){
   const s=rowToSb(d);
   const res=await neonQuery(
-    `INSERT INTO cupons (g,emp,nova,cup,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26) RETURNING *`,
-    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
+    `INSERT INTO cupons (g,emp,nova,cup,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
   );
   return res.rows?.[0];
 }
@@ -1216,8 +1246,8 @@ async function sbUpdate(id,d){
     }
   }
   const res=await neonQuery(
-    `UPDATE cupons SET g=$1,emp=$2,nova=$3,cup=$4,cont=$5,mob=$6,email=$7,url_web=$8,url_web_check=$9,reg=$10,sit=$11,tke=$12,f1q=$13,f1d=$14,f2q=$15,f2d=$16,f3q=$17,f3d=$18,web=$19,ita=$20,fhq=$21,hora=$22,pres=$23,presentat=$24,resguard=$25,notes=$26,updated_at=NOW() WHERE id=$27 RETURNING updated_at`,
-    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
+    `UPDATE cupons SET g=$1,emp=$2,nova=$3,cup=$4,cont=$5,mob=$6,email=$7,url_web=$8,url_web_check=$9,reg=$10,sit=$11,tke=$12,f1q=$13,f1d=$14,f2q=$15,f2d=$16,f3q=$17,f3d=$18,web=$19,webq=$20,ita=$21,fhq=$22,hora=$23,pres=$24,presentat=$25,resguard=$26,notes=$27,updated_at=NOW() WHERE id=$28 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
   );
   d.updated_at=res.rows?.[0]?.updated_at;
 }
@@ -1243,7 +1273,7 @@ function rowToSb(d){
   return {g:d.g,emp:d.emp,nova:d.nova,cup:d.cup,cont:d.cont,mob:d.mob,email:d.email,
     url_web:d.url_web,url_web_check:d.url_web_check,
     reg:d.reg,sit:d.sit,tke:d.tke,f1q:d.f1q,f1d:d.f1d,f2q:d.f2q,f2d:d.f2d,
-    f3q:d.f3q,f3d:d.f3d,web:d.web,ita:d.ita,fhq:d.fhq,hora:d.hora,
+    f3q:d.f3q,f3d:d.f3d,web:d.web,webq:d.webq,ita:d.ita,fhq:d.fhq,hora:d.hora,
     pres:d.pres,presentat:d.presentat,resguard:d.resguard,notes:d.notes};
 }
 function sbToRow(r){
@@ -1251,7 +1281,7 @@ function sbToRow(r){
     cont:r.cont||'',mob:r.mob||'',email:r.email||'',
     url_web:r.url_web||'',url_web_check:r.url_web_check||'',reg:r.reg||'',
     sit:r.sit||'POTENCIAL',tke:r.tke||'',f1q:r.f1q||'',f1d:r.f1d||'',
-    f2q:r.f2q||'',f2d:r.f2d||'',f3q:r.f3q||'',f3d:r.f3d||'',web:r.web||'',
+    f2q:r.f2q||'',f2d:r.f2d||'',f3q:r.f3q||'',f3d:r.f3d||'',web:r.web||'',webq:r.webq||'',
     ita:r.ita||'',fhq:r.fhq||'',hora:r.hora||'',pres:r.pres||'',
     presentat:!!r.presentat,resguard:!!r.resguard,notes:r.notes||'',updated_at:r.updated_at||null};
 }
@@ -1297,7 +1327,7 @@ async function init(){
   try{
     const[pw,lists,pinMap]=await Promise.all([getMasterPw(),getAllLists(),getPins()]);
     if(pw)ADMIN_PW_MASTER=pw;
-    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.pre)P=lists.pre;
+    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.qw)QW=lists.qw;
     if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
     if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
     pins=pinMap;
@@ -1313,7 +1343,7 @@ async function addRow(){
   if(!adminLevel){togglePanel('admin');return;} // demanar password si no autenticat
   const nou={id:nid++,g:'',emp:'',nova:false,cup:'',cont:'',mob:'',email:'',url_web:'',url_web_check:'',
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
-    web:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:''};
+    web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:''};
   showSaving();
   try{
     const saved=await sbInsert(nou);
@@ -1432,11 +1462,11 @@ setInterval(async()=>{
     let changed=false;
     if(pw&&pw!==ADMIN_PW_MASTER){ADMIN_PW_MASTER=pw;}
     if(JSON.stringify(pinMap)!==JSON.stringify(pins)){pins=pinMap;changed=true;}
-    const curLists={g:G,t:T,pre:P,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH};
+    const curLists={g:G,t:T,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH};
     Object.keys(curLists).forEach(k=>{
       if(lists[k]&&JSON.stringify(lists[k])!==JSON.stringify(curLists[k]))changed=true;
     });
-    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.pre)P=lists.pre;
+    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.qw)QW=lists.qw;
     if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
     if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
     if(changed)render();

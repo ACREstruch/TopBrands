@@ -1,0 +1,1056 @@
+/* ═══════════════════════════════════════════════
+   1. CONFIGURACIÓ I DADES
+═══════════════════════════════════════════════ */
+let ADMIN_PW_MASTER='cuponsTB'; // valor per defecte; es sobreescriu des de Neon a init()
+let ADMIN_PWS={}; // {nom: contrasenya} — un Admin, una contrasenya pròpia, assignada pel Master
+let myAdminPw=''; // contrasenya amb la qual l'Admin actual ha entrat (per detectar revocacions)
+let authedAs=''; // nom amb el qual s'ha superat el checkPw() actual
+let adminLevel=''; // '' | 'admin' | 'master'
+let A=['Admin'];
+let pins={}; // {nom Tramitador/Presentador: PIN}
+let unlockedNames=new Set(); // noms desbloquejats amb PIN durant aquesta sessió
+let G=['JE','JR','OG'];
+let T=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL']; // Equip: genera els botons TRM i PRT
+let TF3=[...T];
+let TFH=['AG']; // Equip Hora: genera el botó del rol Hora
+let QW=[...T]; // Equip Web: genera el botó del rol Web
+let WEBLIST=['SI','NO','SBY','PROB'];
+let CUPS=['','CEXP','PI','EC','IA'];
+let SITS=['','COMPLETAT','PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'];
+
+const SIT_COLORS={
+  'COMPLETAT':  {bg:'#00B050',fg:'#fff'},
+  'PROCÉS':  {bg:'#DAF2D0',fg:'#222'},
+  'POTENCIAL':  {bg:'#FFEB9C',fg:'#222'},
+  'HO DESCARTA':{bg:'#44B3E1',fg:'#fff'},
+  'FA COMPE':   {bg:'#C0E6F5',fg:'#222'},
+  'NO COMPLEIX':{bg:'#F4CCCC',fg:'#000'},
+  'NUL':        {bg:'#FF0000',fg:'#fff'},
+};
+const SIT_ORDER={'COMPLETAT':0,'PROCÉS':1,'POTENCIAL':2,'FA COMPE':3,'HO DESCARTA':4,'NO COMPLEIX':5,'NUL':6};
+const ITA_COLORS={
+  '':         {bg:'',fg:'#aaa'},
+  'No aplica':{bg:'',fg:'#aaa'},
+  'DEMANAR':  {bg:'#F4CCCC',fg:'#000'},
+  'DEMANAT':  {bg:'#FFEB9C',fg:'#222'},
+  'REBUT':    {bg:'#DAF2D0',fg:'#222'},
+};
+const WEB_COLORS={'NO':{bg:'#F4CCCC',fg:'#000'},'SBY':{bg:'#FFEB9C',fg:'#222'}};
+const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padStart(2,'0')}:00`);if(i<15)h.push(`${String(i).padStart(2,'0')}:30`);}return h;})();
+
+let D=[];
+let nid=1;
+let cU='Admin', cT='a';
+let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
+let notesExpanded=new Set();
+let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
+
+
+/* ═══════════════════════════════════════════════
+   2. UTILITATS
+═══════════════════════════════════════════════ */
+function fmtDate(v){
+  if(!v)return '';
+  v=v.trim();
+  // Formats: d/m, dd/mm, dd.mm.aa, dd.mm.aa hh:mm
+  const m1=v.match(/^(\d{1,2})[\/\-\.](\d{1,2})$/);
+  if(m1){
+    const now=new Date();
+    const d=String(m1[1]).padStart(2,'0');
+    const mo=String(m1[2]).padStart(2,'0');
+    const y=String(now.getFullYear()).slice(2);
+    return `${d}.${mo}.${y}`;
+  }
+  const m2=v.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+  if(m2){
+    const d=String(m2[1]).padStart(2,'0');
+    const mo=String(m2[2]).padStart(2,'0');
+    const y=m2[3].length===4?m2[3].slice(2):m2[3];
+    const rest=v.includes(' ')?v.slice(v.indexOf(' ')):'';
+    return `${d}.${mo}.${y}${rest}`;
+  }
+  return v;
+}
+function fmtHora(v){
+  if(!v)return '';
+  v=v.trim();
+  const m=v.match(/^(\d{1,2}):?(\d{2})?$/);
+  if(m)return `${String(m[1]).padStart(2,'0')}:${m[2]||'00'}`;
+  return v;
+}
+function addTimestamp(dateStr){
+  if(!dateStr||dateStr.includes(' '))return dateStr;
+  const now=new Date();
+  return `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+function dateToMs(s){
+  if(!s)return 0;
+  const [dt,tm='00:00']=s.split(' ');
+  const [d,m,y]=dt.split('.');
+  return new Date(`20${y}-${m}-${d}T${tm}`).getTime();
+}
+
+/* ═══════════════════════════════════════════════
+   3. LÒGICA DE DADES
+═══════════════════════════════════════════════ */
+function isValidDate(s){
+  return s&&/^\d{2}\.\d{2}\.\d{2}/.test(s);
+}
+function checkAutoComplete(d){
+  if(!d.reg&&['COMPLETAT','PROCÉS'].includes(d.sit)){d.sit='POTENCIAL';return;}
+  if(['HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'].includes(d.sit))return;
+  const f1ok=d.f1q&&isValidDate(d.f1d);
+  const f2ok=d.f2q&&isValidDate(d.f2d);
+  const f3ok=d.f3q&&isValidDate(d.f3d);
+  const itaOk=d.cup!=='IA'||d.ita==='REBUT';
+  const allDone=f1ok&&f2ok&&f3ok&&itaOk;
+  if(allDone&&d.reg){
+    if(d.web!=='') d.sit='COMPLETAT';
+    else if(d.sit!=='COMPLETAT') showWebDialog(d);
+  } else if(!allDone&&d.sit==='COMPLETAT'&&YEAR_CONFIG.strictComplete){
+    d.sit='PROCÉS';
+  }
+}
+async function reorderTke(el){
+  const id=+el.dataset.id;
+  const newNum=parseInt(el.textContent.trim());
+  const d=D.find(x=>x.id===id);
+  if(!d||isNaN(newNum))return render();
+  const actius=D.filter(x=>['COMPLETAT','PROCÉS'].includes(x.sit)&&x.reg&&x.tke)
+    .sort((a,b)=>parseInt(a.tke)-parseInt(b.tke));
+  const n=Math.max(1,Math.min(actius.length,newNum));
+  const idx=actius.findIndex(x=>x.id===id);
+  actius.splice(idx,1);
+  actius.splice(n-1,0,d);
+  actius.forEach((x,i)=>x.tke=String(i+1));
+  showSaving();
+  try{
+    await Promise.all(actius.map(x=>sbUpdate(x.id,x)));
+    showSaved();
+  }catch(e){showError(e.message);}
+  render();
+}
+
+function showWebDialog(d){
+  if(document.getElementById('web-dialog')) return;
+  const el=document.createElement('div');
+  el.id='web-dialog';
+  el.style='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center';
+  el.innerHTML=`<div style="background:#fff;border-radius:8px;padding:24px;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <p style="font-size:11pt;font-weight:bold;margin-bottom:10px">⚠️ Verificació WEB requerida</p>
+    <p style="font-size:10pt;margin-bottom:20px;line-height:1.5">No es pot marcar <strong>${d.emp||'aquesta empresa'}</strong> com a COMPLETAT sense haver verificat en el camp WEB que l'empresa té web en idioma estranger. Si us plau, verifica-ho i selecciona una opció al camp WEB.</p>
+    <div style="text-align:right">
+      <button onclick="document.getElementById('web-dialog').remove()" style="padding:6px 20px;border:1px solid #bbb;border-radius:4px;cursor:pointer;font-size:10pt;background:#2c5aa0;color:#fff">OK</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+}
+function calcTickets(){
+  D.forEach(d=>{if(!['COMPLETAT','PROCÉS'].includes(d.sit)||!d.reg)d.tke='';});
+  D.filter(d=>['COMPLETAT','PROCÉS'].includes(d.sit)&&d.reg)
+   .sort((a,b)=>dateToMs(a.reg)-dateToMs(b.reg))
+   .forEach((d,i)=>d.tke=String(i+1));
+}
+function delRow_placeholder(){} // sobreescrita per Supabase
+
+
+
+
+/* ═══════════════════════════════════════════════
+   4. PERMISOS
+═══════════════════════════════════════════════ */
+const HELPER_FIELDS=['emp','cont','mob','email','reg','notes']; // camps que pot tocar un Admin ajudant (no Master)
+function canEd(d,f){
+  if(fHora){
+    if(f==='hora')return (cT==='a'&&adminLevel==='master')?!!d.fhq:(cT==='h'&&d.sit==='COMPLETAT'&&!d.hora&&d.fhq===cU);
+    return false;
+  }
+  if(cT==='a'){
+    if(adminLevel==='master'){ if(f==='hora') return !!d.fhq; return true; }
+    if(adminLevel==='admin') return HELPER_FIELDS.includes(f);
+    return false; // no autenticat → només lectura
+  }
+  if(cT==='g')return false;
+  if(cT==='p'){
+    if(f==='notes')return d.pres===cU;
+    return false; // presentat/resguard es gestionen per separat
+  }
+  if(cT==='w'){
+    if(f==='url_web'||f==='url_web_check')return d.webq===cU;
+    return false; // el camp "web" el gestiona webCell() directament
+  }
+  if(cT==='h'){
+    if(f==='hora')return d.sit==='COMPLETAT'&&!d.hora&&d.fhq===cU;
+    return false;
+  }
+  if(cT==='t'){
+    if(f==='notes')return true;
+    if(f==='f1d')return d.f1q===cU;
+    if(f==='f2d')return d.f2q===cU;
+    if(f==='f3d')return d.f3q===cU;
+    return false;
+  }
+  return false;
+}
+
+/* ═══════════════════════════════════════════════
+   5. RENDER
+═══════════════════════════════════════════════ */
+function ec(d,f,v,multi){
+  if(!canEd(d,f))return `<span>${v||''}</span>`;
+  return `<span class="ed" contenteditable="true" data-id="${d.id}" data-f="${f}" onblur="sv(this)" onkeydown="if(event.key==='Enter'&&!${!!multi}){event.preventDefault();this.blur()}">${v||''}</span>`;
+}
+function ovCell(v,html){
+  return `<div class="ov-cell">${html}${v?`<div class="ov-pop">${v}</div>`:''}</div>`;
+}
+function sel(d,f,list,v){
+  if(cT!=='a'||!adminLevel)return `<span>${v||''}</span>`;
+  const emptyOpt=f==='g'?'<option value=""></option>':'';
+  return `<select onchange="svs(${d.id},'${f}',this.value)">${emptyOpt}${list.map(x=>`<option value="${x}"${v===x?' selected':''}>${x}</option>`).join('')}</select>`;
+}
+function selFQ(d,n){
+  const f='f'+n+'q', lst=n===1?T:n===2?G:TF3, v=d[f];
+  if(cT!=='a'||!adminLevel)return `<span>${v||''}</span>`;
+  return `<select onchange="svs(${d.id},'${f}',this.value)"><option value=""></option>${lst.map(x=>`<option${v===x?' selected':''}>${x}</option>`).join('')}</select>`;
+}
+function selFH(d){
+  if(cT!=='a'||adminLevel!=='master')return `<span>${d.fhq||''}</span>`;
+  return `<select onchange="svs(${d.id},'fhq',this.value)"><option value=""></option>${TFH.map(x=>`<option${d.fhq===x?' selected':''}>${x}</option>`).join('')}</select>`;
+}
+function selWebQ(d){
+  if(cT!=='a'||adminLevel!=='master')return `<span>${d.webq||''}</span>`;
+  return `<select onchange="svs(${d.id},'webq',this.value)"><option value=""></option>${QW.map(x=>`<option${d.webq===x?' selected':''}>${x}</option>`).join('')}</select>`;
+}
+function sitCell(d){
+  const sc=SIT_COLORS[d.sit]||{};
+  const bg=sc.bg||'',fg=sc.fg||'#222';
+  const label=d.sit||'';
+  const canEditSit=(cT==='a'&&adminLevel==='master')||(cT==='t'&&d.sit!=='COMPLETAT');
+  if(!canEditSit)return `<div style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
+  const opts=(cT==='t'?SITS.filter(s=>s&&s!=='COMPLETAT'&&s!=='PROCÉS'):SITS.filter(s=>s))
+    .map(s=>{const c=SIT_COLORS[s]||{};return `<div class="sit-opt" style="background:${c.bg||'#fff'};color:${c.fg||'#222'}" onclick="svSit(${d.id},'${s}')">${s}</div>`;}).join('');
+  return `<div class="sit-wrap" style="background:${bg};color:${fg}" onclick="toggleDrop(event,this,'sit-drop')">
+    <span>${label}</span><span class="sit-arrow">▾</span>
+    <div class="sit-drop">${opts}</div>
+  </div>`;
+}
+function itaCell(d){
+  const v=d.ita||'';
+  const ic=ITA_COLORS[v]||ITA_COLORS[''];
+  const bgStyle=ic.bg?`background:${ic.bg};`:'';
+  const label=v||'No aplica';
+  if(d.cup!=='IA')return `<td class="cita" style="${bgStyle}color:${ic.fg};text-align:center">${label}</td>`;
+  const canIta=(cT==='a'&&adminLevel==='master')||(cT==='t'&&(d.f1q===cU||d.f2q===cU||d.f3q===cU));
+  if(!canIta)return `<td class="cita" style="${bgStyle}color:${ic.fg};text-align:center">${label}</td>`;
+  const opts=['No aplica','DEMANAR','DEMANAT','REBUT'].map(s=>{
+    const key=s==='No aplica'?'':s;
+    const c=ITA_COLORS[key]||ITA_COLORS[''];
+    return `<div class="ita-opt" style="${c.bg?'background:'+c.bg+';':''}color:${c.fg}" onclick="svIta(${d.id},'${key}')">${s}</div>`;
+  }).join('');
+  return `<td class="cita" style="${bgStyle}color:${ic.fg}">
+    <div class="ita-wrap" onclick="toggleDrop(event,this,'ita-drop')">
+      <span>${label}</span><span class="sit-arrow">▾</span>
+      <div class="ita-drop">${opts}</div>
+    </div></td>`;
+}
+function webCell(d){
+  const wc=WEB_COLORS[d.web]||{};
+  const bgStyle=wc.bg?`background:${wc.bg};color:${wc.fg};`:'';
+  const canW=(cT==='a'&&adminLevel==='master'&&!fHora)||(cT==='w'&&d.webq===cU);
+  if(!canW)return `<td class="cweb webcel" style="${bgStyle}"><span>${d.web||''}</span></td>`;
+  return `<td class="cweb webcel" style="${bgStyle}"><select style="${bgStyle}width:100%" onchange="svs(${d.id},'web',this.value)">
+    <option value=""></option>${WEBLIST.map(x=>`<option value="${x}"${d.web===x?' selected':''}>${x}</option>`).join('')}
+  </select></td>`;
+}
+function presCell(d){
+  if(cT!=='a'||adminLevel!=='master')return `<td class="cpres">${d.pres||''}</td>`;
+  return `<td class="cpres"><select onchange="svs(${d.id},'pres',this.value)"><option value=""></option>${T.map(x=>`<option${d.pres===x?' selected':''}>${x}</option>`).join('')}</select></td>`;
+}
+function presTd(d){
+  const canP=d.sit==='COMPLETAT'&&d.pres&&((cT==='a'&&adminLevel==='master')||(cT==='p'&&d.pres===cU));
+  return `<td class="cpret webcel"><input type="checkbox"${d.presentat?' checked':''}${canP?'':' disabled'} onchange="svs(${d.id},'presentat',this.checked)"></td>`;
+}
+function resguardTd(d){
+  const bg=d.presentat&&!d.resguard?'background:#F4CCCC;color:#000;':'';
+  const canR=d.sit==='COMPLETAT'&&d.presentat&&((cT==='a'&&adminLevel==='master')||(cT==='p'&&d.pres===cU));
+  return `<td class="crsgd webcel" style="${bg}"><input type="checkbox"${d.resguard?' checked':''}${canR?'':' disabled'} onchange="svs(${d.id},'resguard',this.checked)"></td>`;
+}
+function rowHtml(d,isMaster){
+  return `<tr>
+    <td style="text-align:center;padding:2px">${isMaster?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold" title="Eliminar">×</button>`:''}</td>
+    <td class="cg">${sel(d,'g',G,d.g)}</td>
+    <td class="cemp">${ec(d,'emp',d.emp)}</td>
+    <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${(cT==='a'&&adminLevel)?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
+    <td class="ccup">${sel(d,'cup',CUPS,d.cup)}</td>
+    <td class="ccon">${ec(d,'cont',d.cont)}</td>
+    <td class="cmob">${ec(d,'mob',d.mob)}</td>
+    <td class="ceml">${ovCell(d.email,ec(d,'email',d.email))}</td>
+    <td class="csit">${sitCell(d)}</td>
+    <td class="creg">${ec(d,'reg',d.reg)}</td>
+    <td class="ctke" style="text-align:center;color:#555">${isMaster&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
+    <td class="cfq">${selFQ(d,1)}</td><td class="cfd">${ec(d,'f1d',d.f1d)}</td>
+    <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
+    ${itaCell(d)}
+    <td class="cfq">${selWebQ(d)}</td>
+    ${webCell(d)}
+    <td class="curlweb">${ovCell(d.url_web,ec(d,'url_web',d.url_web))}</td>
+    <td class="curlwebchk">${ovCell(d.url_web_check,ec(d,'url_web_check',d.url_web_check))}</td>
+    <td class="cfq">${selFQ(d,3)}</td><td class="cfd">${ec(d,'f3d',d.f3d)}</td>
+    <td class="cfq">${selFH(d)}</td>
+    <td class="chra">${ec(d,'hora',d.hora)}</td>
+    ${presCell(d)}
+    ${presTd(d)}
+    ${resguardTd(d)}
+    <td class="ncell cnot"><div class="notes-wrap${notesExpanded.has(d.id)?' expanded':''}" data-id="${d.id}">${ec(d,'notes',d.notes,true)}<button type="button" class="notes-toggle" onclick="toggleNotes(this)">+</button></div></td>
+  </tr>`;
+}
+function toggleGroup(sit){
+  if(collapsedGroups.has(sit))collapsedGroups.delete(sit);else collapsedGroups.add(sit);
+  render();
+}
+
+function render(){
+  rebuildRoleBtns();
+
+  const hints={a:adminLevel==='master'?'Master autenticat — edició completa i gestió d\'admins.':adminLevel==='admin'?`Admin ${cU} — creació de registres i dades bàsiques.`:'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
+    t:`Tramitador ${cU} — editeu les vostres fitxes i l'ITA.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`,
+    w:`Gestor Web ${cU} — editeu Web, URL web i URL web check.`,h:`Gestor Hora ${cU} — editeu la Validar Hora.`};
+  document.getElementById('hint-txt').textContent=hints[cT]||'';
+
+  document.getElementById('btn-nova').style.display=cT==='a'?'inline-block':'none';
+  const canAddRow=cT==='a'&&!!adminLevel;
+  const isMaster=cT==='a'&&adminLevel==='master';
+  const webPendent=D.filter(d=>['COMPLETAT','PROCÉS'].includes(d.sit)&&d.web!=='SI').length;
+  const btnWeb=document.getElementById('btnWeb');
+  btnWeb.textContent=`WEB Pendent${webPendent>0?' ('+webPendent+')':''}`;
+  btnWeb.style.fontWeight=webPendent>0?'bold':'normal';
+  btnWeb.style.background=webPendent>0?'#F4CCCC':'';
+  btnWeb.style.borderColor=webPendent>0?'#c00':'';
+  document.getElementById('btn-nova').style.opacity=canAddRow?'1':'0.4';
+  document.getElementById('btn-nova').title=canAddRow?'':'Requereix autenticació Admin';
+  document.getElementById('btn-admin').style.display=cT==='a'?'inline-block':'none'; // sempre visible
+  document.getElementById('btn-llistes').style.display=isMaster?'inline-block':'none';
+
+  let rows=D.filter(d=>{
+    if(cT==='g'&&d.g!==cU)return false;
+    if(cT==='t'&&(d.f1q!==cU&&d.f2q!==cU&&d.f3q!==cU))return false;
+    if(cT==='t'&&!['COMPLETAT','PROCÉS'].includes(d.sit))return false;
+    if(cT==='p'&&(d.pres!==cU||d.sit!=='COMPLETAT'))return false;
+    if(cT==='w'&&d.webq!==cU)return false;
+    if(cT==='h'&&(d.fhq!==cU||d.sit!=='COMPLETAT'))return false;
+    if(fWeb&&d.web==='SI')return false;
+    if(fHora&&(d.hora||d.sit!=='COMPLETAT'))return false;
+    if(fNova&&!d.nova)return false;
+    if(fCup&&d.cup!==fCup)return false;
+    if(fSit&&d.sit!==fSit)return false;
+    if(fQ){const q=fQ.toLowerCase();if(!d.emp.toLowerCase().includes(q)&&!d.cont.toLowerCase().includes(q))return false;}
+    return true;
+  });
+
+  rows.sort((a,b)=>{
+    const aA=['COMPLETAT','PROCÉS'].includes(a.sit), bA=['COMPLETAT','PROCÉS'].includes(b.sit);
+    if(aA&&bA)return (parseInt(a.tke)||0)-(parseInt(b.tke)||0);
+    if(aA)return -1; if(bA)return 1;
+    return (SIT_ORDER[a.sit]??99)-(SIT_ORDER[b.sit]??99);
+  });
+
+  // Recomptes
+  const cnt={};
+  SITS.filter(s=>s).forEach(s=>cnt[s]=0);
+  D.forEach(d=>{if(cnt[d.sit]!==undefined)cnt[d.sit]++;});
+  const total=D.length;
+  const rc=[
+    {l:'REGISTRES',n:total,bg:'#fff',fg:'#222'},
+    {l:'COMPLETATS',n:cnt['COMPLETAT'],bg:'#00B050',fg:'#fff'},
+    {l:'PROCÉS',n:cnt['PROCÉS'],bg:'#DAF2D0',fg:'#222'},
+    {l:'POTENCIALS',n:cnt['POTENCIAL'],bg:'#fff',fg:'#222'},
+    {l:'HO DESCARTA',n:cnt['HO DESCARTA'],bg:'#fff',fg:'#222'},
+    {l:'FA COMPE',n:cnt['FA COMPE'],bg:'#fff',fg:'#222'},
+    {l:'NO COMPLEIX',n:cnt['NO COMPLEIX'],bg:'#fff',fg:'#222'},
+    {l:'NUL',n:cnt['NUL'],bg:'#fff',fg:'#222'},
+  ];
+  document.getElementById('recomptes').innerHTML=rc.map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+
+  const novesCount=D.filter(d=>d.nova).length;
+  document.getElementById('recomptes-nova').innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesCount}</span><span class="rc-l">EMPRESES NOVES</span></div>`;
+
+  // Actualitzar selectors filtres
+  const fcs=document.getElementById('fCupSel');
+  const fss=document.getElementById('fSitSel');
+  fcs.innerHTML=`<option value="">Tots</option>${CUPS.filter(x=>x).map(x=>`<option value="${x}"${fCup===x?' selected':''}>${x}</option>`).join('')}`;
+  fss.innerHTML=`<option value="">Totes</option>${SITS.filter(x=>x).map(x=>`<option value="${x}"${fSit===x?' selected':''}>${x}</option>`).join('')}`;
+
+  const GROUP_DEFS=[
+    {key:'COMPLETAT',label:'COMPLETAT'},
+    {key:'PROCÉS',label:'PROCÉS'},
+    {key:'POTENCIAL',label:'POTENCIAL'},
+    {key:'FA COMPE',label:'FA COMPE'},
+    {key:'HO DESCARTA',label:'HO DESCARTA'},
+    {key:'NO COMPLEIX',label:'NO COMPLEIX'},
+    {key:'NUL',label:'NUL'},
+    {key:'',label:'Sense estat'},
+  ];
+  let tbodyHtml='';
+  GROUP_DEFS.forEach(g=>{
+    const groupRows=rows.filter(d=>d.sit===g.key);
+    if(!groupRows.length)return;
+    const collapsed=collapsedGroups.has(g.key);
+    const sc=SIT_COLORS[g.key]||{bg:'#eee',fg:'#333'};
+    tbodyHtml+=`<tr class="group-row"><td colspan="28" style="background:${sc.bg||'#eee'};color:${sc.fg||'#333'};cursor:pointer;font-weight:bold;padding:5px 8px" onclick="toggleGroup('${g.key}')">
+      <span style="display:inline-block;width:16px">${collapsed?'▶':'▼'}</span>${g.label} <span style="font-weight:normal;opacity:.8">(${groupRows.length})</span>
+    </td></tr>`;
+    if(!collapsed)tbodyHtml+=groupRows.map(d=>rowHtml(d,isMaster)).join('');
+  });
+  document.getElementById('tbody').innerHTML=tbodyHtml;
+
+  // Ajust top de la 2a fila de capçalera
+  requestAnimationFrame(()=>{
+    const rows=document.querySelectorAll('thead tr');
+    if(rows[0]){
+      const h1=rows[0].offsetHeight;
+      if(rows[1])rows[1].querySelectorAll('th').forEach(th=>th.style.top=h1+'px');
+      if(rows[2])rows[2].querySelectorAll('th').forEach(th=>th.style.top=(h1+(rows[1]?rows[1].offsetHeight:0))+'px');
+    }
+    document.querySelectorAll('.notes-wrap').forEach(w=>{
+      const ed=w.querySelector('span');
+      const btn=w.querySelector('.notes-toggle');
+      if(!ed||!btn)return;
+      if(w.classList.contains('expanded')){
+        btn.textContent='−';
+        btn.style.display='inline-block';
+      } else {
+        const overflow=ed.scrollHeight>ed.clientHeight+1;
+        btn.textContent='+';
+        btn.style.display=overflow?'inline-block':'none';
+      }
+    });
+    adjustTableHeight();
+    updateStickyOffsets();
+  });
+}
+function adjustTableHeight(){
+  const wrap=document.getElementById('table-wrap');
+  if(!wrap)return;
+  const top=wrap.getBoundingClientRect().top;
+  const avail=window.innerHeight-top-12;
+  wrap.style.maxHeight=Math.max(200,avail)+'px';
+}
+function updateStickyOffsets(){
+  const ths=document.querySelectorAll('thead tr:first-child th');
+  if(ths.length<5)return;
+  const root=document.documentElement.style;
+  let sum=0;
+  root.setProperty('--stick1','0px');
+  for(let i=0;i<4;i++){
+    sum+=ths[i].offsetWidth;
+    root.setProperty('--stick'+(i+2),sum+'px');
+  }
+}
+function adjustLayout(){adjustTableHeight();updateStickyOffsets();}
+window.addEventListener('resize',adjustLayout);
+if(window.ResizeObserver){
+  const headerObs=new ResizeObserver(()=>adjustLayout());
+  const topRowEl=document.querySelector('.top-row');
+  const hintEl=document.getElementById('hint');
+  if(topRowEl)headerObs.observe(topRowEl);
+  if(hintEl)headerObs.observe(hintEl);
+  headerObs.observe(document.body);
+}
+function toggleNotes(btn){
+  const wrap=btn.parentElement;
+  const id=+wrap.dataset.id;
+  const isExp=wrap.classList.toggle('expanded');
+  if(isExp)notesExpanded.add(id);else notesExpanded.delete(id);
+  btn.textContent=isExp?'−':'+';
+}
+
+/* ═══════════════════════════════════════════════
+   6. DROPDOWNS
+═══════════════════════════════════════════════ */
+function toggleDrop(e,wrap,cls){
+  e.stopPropagation();
+  const drop=wrap.querySelector('.'+cls);
+  const isOpen=drop.classList.contains('open');
+  document.querySelectorAll('.sit-drop.open,.ita-drop.open').forEach(x=>x.classList.remove('open'));
+  if(!isOpen){
+    const r=wrap.getBoundingClientRect();
+    drop.style.top=r.bottom+'px';drop.style.left=r.left+'px';
+    if(cls==='sit-drop')drop.style.minWidth=r.width+'px';
+    drop.classList.add('open');
+  }
+}
+document.addEventListener('click',()=>document.querySelectorAll('.sit-drop.open,.ita-drop.open').forEach(x=>x.classList.remove('open')));
+
+/* ═══════════════════════════════════════════════
+   7. PESTANYES
+═══════════════════════════════════════════════ */
+function showTab(id){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','sch-tickets','sch-cupo'][i]===id));
+  document.querySelectorAll('.tab-content').forEach(d=>d.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='sch-tickets')renderSchTickets();
+  if(id==='sch-cupo')renderSchCupo();
+}
+
+/* ═══════════════════════════════════════════════
+   8. SCHEDULES
+═══════════════════════════════════════════════ */
+function cupBadge(cup){
+  const m={CEXP:'background:#EEEDFE;color:#534AB7',PI:'background:#E1F5EE;color:#0F6E56',EC:'background:#E6F1FB;color:#185FA5',IA:'background:#FAEEDA;color:#854F0B'};
+  return cup?`<span class="sch-cup" style="${m[cup]||''}">${cup}</span>`:'';
+}
+function schCell(d){
+  const canCheck=(cT==='a'&&adminLevel==='master')||(cT==='p'&&d.pres===cU);
+  return `<div>
+    <span class="sch-cell-emp">${d.tke?d.tke+'. ':''}${d.emp}</span>${cupBadge(d.cup)}
+    <div class="sch-checks">
+      <label><input type="checkbox"${d.presentat?' checked':''}${canCheck?'':' disabled'} onchange="svs(${d.id},'presentat',this.checked)"> Presentat</label>
+      <label><input type="checkbox"${d.resguard?' checked':''}${canCheck&&d.presentat?'':' disabled'} onchange="svs(${d.id},'resguard',this.checked)"> Arxivat</label>
+    </div>
+  </div>`;
+}
+function renderSchTickets(){
+  const presos=T.filter(p=>D.some(d=>d.pres===p&&d.sit==='COMPLETAT'));
+  document.getElementById('sch-tickets-head').innerHTML=`<tr><th>Hora</th>${presos.map(p=>`<th>${p}</th>`).join('')}</tr>`;
+  document.getElementById('sch-tickets-body').innerHTML=SCH_HORES.map(h=>{
+    const cells=presos.map(p=>{
+      const m=D.filter(d=>d.hora===h&&d.pres===p&&d.sit==='COMPLETAT').sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
+      return `<td>${m.map((d,i)=>(i>0?'<hr class="sch-sep">':'')+schCell(d)).join('')}</td>`;
+    }).join('');
+    return `<tr><td class="sch-hora">${h}</td>${cells}</tr>`;
+  }).join('');
+}
+function renderSchCupo(){
+  const CUPS_SCH=['CEXP','PI','EC','IA'];
+  document.getElementById('sch-cupo-head').innerHTML=`<tr><th>Hora</th>${CUPS_SCH.map(c=>`<th>${cupBadge(c)}</th>`).join('')}</tr>`;
+  document.getElementById('sch-cupo-body').innerHTML=SCH_HORES.map(h=>{
+    const cells=CUPS_SCH.map(cup=>{
+      const m=D.filter(d=>d.hora===h&&d.cup===cup&&d.sit==='COMPLETAT').sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
+      return `<td>${m.map((d,i)=>(i>0?'<hr class="sch-sep">':'')+schCell(d)).join('')}</td>`;
+    }).join('');
+    return `<tr><td class="sch-hora">${h}</td>${cells}</tr>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   9. FILTRES
+═══════════════════════════════════════════════ */
+function setU(u,t){
+  if(t==='a'&&u!==authedAs){adminLevel='';myAdminPw='';} // canviar a una altra identitat d'Admin obliga a re-autenticar-se
+  if((t==='t'||t==='p'||t==='w'||t==='h')&&pins[u]&&!unlockedNames.has(u)){
+    promptPin(u,t);
+    return;
+  }
+  cU=u;cT=t;fWeb=false;fHora=false;
+  document.getElementById('btnWeb').classList.remove('active');
+  document.getElementById('btnHora').classList.remove('active');
+  render();
+}
+function promptPin(u,t){
+  if(document.getElementById('pin-dialog'))return;
+  const el=document.createElement('div');
+  el.id='pin-dialog';
+  el.style='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center';
+  el.innerHTML=`<div style="background:#fff;border-radius:8px;padding:20px;min-width:240px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <p style="font-size:10pt;font-weight:bold;margin-bottom:10px">PIN de ${u}</p>
+    <input type="password" id="pin-inp" style="border:1px solid #ccc;padding:4px 6px;border-radius:3px;width:100px;margin-right:6px;">
+    <button id="pin-ok-btn" style="padding:4px 12px;border:1px solid #bbb;border-radius:3px;cursor:pointer">Entrar</button>
+    <span id="pin-err" style="color:red;font-size:9pt;display:none;margin-left:6px">Incorrecte</span>
+    <div style="text-align:right;margin-top:10px"><span onclick="document.getElementById('pin-dialog').remove()" style="cursor:pointer;color:#999;font-size:9pt">Cancel·lar</span></div>
+  </div>`;
+  document.body.appendChild(el);
+  const submit=()=>{
+    const v=document.getElementById('pin-inp').value.trim();
+    if(v&&v.toUpperCase()===String(pins[u]).toUpperCase()){
+      unlockedNames.add(u);
+      document.getElementById('pin-dialog').remove();
+      setU(u,t);
+    }else{
+      document.getElementById('pin-err').style.display='inline';
+      document.getElementById('pin-inp').value='';
+    }
+  };
+  document.getElementById('pin-ok-btn').onclick=submit;
+  document.getElementById('pin-inp').addEventListener('keydown',e=>{if(e.key==='Enter')submit();});
+  setTimeout(()=>document.getElementById('pin-inp').focus(),50);
+}
+function toggleWeb(){
+  fWeb=!fWeb;
+  document.getElementById('btnWeb').classList.toggle('active',fWeb);
+  render();
+}
+function toggleHora(){
+  fHora=!fHora;
+  document.getElementById('btnHora').classList.toggle('active',fHora);
+  render();
+}
+function toggleNova(){
+  fNova=!fNova;
+  document.getElementById('btnNova').classList.toggle('active',fNova);
+  render();
+}
+function scrollTable(px){
+  const w=document.getElementById('table-wrap');
+  if(!w)return;
+  w.scrollLeft=w.scrollLeft+px;
+}
+
+/* ═══════════════════════════════════════════════
+   10. BOTONS DE ROL
+═══════════════════════════════════════════════ */
+function rebuildRoleBtns(){
+  document.getElementById('rbA').innerHTML=A.map(u=>`<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
+  document.getElementById('rbG').innerHTML=G.map(u=>`<button class="rbtn${u===cU&&cT==='g'?' active':''}" onclick="setU('${u}','g')">${u}</button>`).join('');
+  document.getElementById('rbT').innerHTML=T.map(u=>`<button class="rbtn${u===cU&&cT==='t'?' active':''}" onclick="setU('${u}','t')">${u}</button>`).join('');
+  document.getElementById('rbP').innerHTML=T.map(u=>`<button class="rbtn${u===cU&&cT==='p'?' active':''}" onclick="setU('${u}','p')">${u}</button>`).join('');
+  document.getElementById('rbW').innerHTML=QW.map(u=>`<button class="rbtn${u===cU&&cT==='w'?' active':''}" onclick="setU('${u}','w')">${u}</button>`).join('');
+  document.getElementById('rbH').innerHTML=TFH.map(u=>`<button class="rbtn${u===cU&&cT==='h'?' active':''}" onclick="setU('${u}','h')">${u}</button>`).join('');
+}
+function rebuildAdminBtns(){
+  document.getElementById('rbA').innerHTML=A.map(u=>`<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   11. PANELL ADMIN
+═══════════════════════════════════════════════ */
+function togglePanel(id){
+  const p=document.getElementById('panel-'+id);
+  const ov=document.getElementById('overlay');
+  if(p.classList.contains('open')){closeAllPanels();return;}
+  closeAllPanels();
+  if(id==='admin'){
+    if(adminLevel){
+      document.getElementById('admin-pw-zone').style.display='none';
+      document.getElementById('admin-list-wrap').style.display='block';
+      renderAdminList();
+    }else{
+      document.getElementById('admin-pw-zone').style.display='block';
+      document.getElementById('admin-list-wrap').style.display='none';
+      document.getElementById('pw-err').style.display='none';
+      document.getElementById('pw-inp').value='';
+      setTimeout(()=>document.getElementById('pw-inp').focus(),50);
+    }
+  }else if(id==='llistes')renderLlistes();
+  p.classList.add('open');ov.classList.add('open');
+}
+function closeAllPanels(){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  document.getElementById('overlay').classList.remove('open');
+}
+function checkPw(){
+  const v=document.getElementById('pw-inp').value;
+  if(cU==='Admin'){
+    if(v!==ADMIN_PW_MASTER){
+      document.getElementById('pw-err').style.display='inline';
+      document.getElementById('pw-inp').value='';
+      return;
+    }
+    adminLevel='master';myAdminPw=v;authedAs=cU;
+  }else{
+    if(!ADMIN_PWS[cU]||v!==ADMIN_PWS[cU]){
+      document.getElementById('pw-err').style.display='inline';
+      document.getElementById('pw-inp').value='';
+      return;
+    }
+    adminLevel='admin';myAdminPw=v;authedAs=cU;
+  }
+  document.getElementById('pw-err').style.display='none';
+  document.getElementById('admin-pw-zone').style.display='none';
+  document.getElementById('admin-list-wrap').style.display='block';
+  renderAdminList();render();
+}
+function adminLogout(){
+  adminLevel='';myAdminPw='';authedAs='';
+  closeAllPanels();
+  render();
+}
+function renderAdminList(){
+  const canEdit=adminLevel==='master';
+  document.getElementById('admin-list').innerHTML=A.map((u,i)=>`<div class="admin-item">
+    <span>${u}${canEdit&&i>0?` <span style="font-size:8pt;color:#888">(${ADMIN_PWS[u]||''})</span>`:''}</span>
+    ${canEdit?(i>0?`<button class="llista-del" title="Canviar contrasenya" onclick="resetAdminPw('${u}')" style="border:none;background:none;cursor:pointer;font-size:11pt;margin-right:4px">🔑</button><button class="llista-del" title="Eliminar" onclick="removeAdmin('${u}')">×</button>`:'<span style="font-size:8pt;color:#aaa">principal (Master)</span>'):''}
+  </div>`).join('');
+  const az=document.getElementById('admin-add-zone');
+  const pz=document.getElementById('admin-pw-change-zone');
+  if(az)az.style.display=canEdit?'flex':'none';
+  if(pz)pz.style.display=canEdit?'block':'none';
+}
+async function addAdmin(){
+  if(adminLevel!=='master')return;
+  const v=document.getElementById('new-admin').value.trim();
+  const pw=document.getElementById('new-admin-pw').value.trim();
+  if(!v||!pw||A.includes(v))return;
+  A.push(v);ADMIN_PWS[v]=pw;
+  document.getElementById('new-admin').value='';document.getElementById('new-admin-pw').value='';
+  rebuildAdminBtns();renderAdminList();
+  try{await sbAddAdmin(v,pw);}catch(e){showError(e.message);}
+}
+async function removeAdmin(u){
+  if(adminLevel!=='master')return;
+  if(A.length<=1)return;
+  A=A.filter(x=>x!==u);delete ADMIN_PWS[u];rebuildAdminBtns();renderAdminList();
+  try{await sbRemoveAdmin(u);}catch(e){showError(e.message);}
+}
+async function resetAdminPw(u){
+  if(adminLevel!=='master')return;
+  const v=prompt(`Nova contrasenya per a ${u}:`);
+  if(!v)return;
+  ADMIN_PWS[u]=v;
+  try{await sbSetAdminPassword(u,v);showSaved();}catch(e){showError(e.message);}
+}
+async function changePw(){
+  if(adminLevel!=='master')return;
+  const v=document.getElementById('new-pw').value.trim();
+  if(!v)return;
+  ADMIN_PW_MASTER=v;document.getElementById('new-pw').value='';document.getElementById('pw-ok').style.display='inline';setTimeout(()=>document.getElementById('pw-ok').style.display='none',2000);
+  try{await setMasterPw(v);}catch(e){console.warn('Error desant contrasenya Master:',e);}
+}
+
+/* ═══════════════════════════════════════════════
+   12. PANELL LLISTES
+═══════════════════════════════════════════════ */
+function renderLlistes(){
+  const llistes=[
+    {title:'KAM',arr:G,key:'g',note:''},
+    {title:'Equip',arr:T,key:'t',note:'(Tramitadors/Presentadors = Qui Omplir)'},
+    {title:'Gestor Web',arr:QW,key:'qw',note:'(= Qui Web)'},
+    {title:'Gestor Hora',arr:TFH,key:'tfh',note:'(= Qui Hora)'},
+    {title:'Cupons',arr:CUPS.filter(x=>x),key:'c',note:''},
+    {title:'Estats',arr:SITS.filter(x=>x),key:'s',note:''},
+    {title:'Web',arr:WEBLIST,key:'web',note:''},
+    {title:'Qui — Valid.',arr:TF3,key:'tf3',note:'(llista pròpia)'},
+  ];
+  document.getElementById('llistes-contingut').innerHTML=llistes.map(l=>`
+    <div class="llista-grp">
+      <h4>${l.title} <span style="font-weight:normal;color:#aaa">${l.note}</span></h4>
+      ${l.arr.map(v=>{
+        const pinField=(l.key==='t'||l.key==='qw'||l.key==='tfh')?`<input type="text" value="${pins[v]||''}" placeholder="PIN" style="width:52px;border:1px solid #ccc;border-radius:3px;padding:1px 4px;font-size:8.5pt;margin-right:4px" onchange="setPin('${v}',this.value.trim())">`:'';
+        return `<div class="llista-item"><span>${v}</span><span style="display:flex;align-items:center">${pinField}<button class="llista-del" onclick="removeFromList('${l.key}','${v}')">×</button></span></div>`;
+      }).join('')}
+      <div class="llista-add">
+        <input type="text" id="inp-${l.key}" placeholder="Afegir…">
+        <button onclick="addToList('${l.key}')">+</button>
+      </div>
+    </div>`).join('');
+}
+function addToList(key){
+  const el=document.getElementById('inp-'+key);
+  const v=el.value.trim().toUpperCase();
+  if(!v)return;
+  let arr=null;
+  if(key==='g'&&!G.includes(v)){G.push(v);arr=G;}
+  else if(key==='t'&&!T.includes(v)){T.push(v);rebuildRoleBtns();arr=T;}
+  else if(key==='qw'&&!QW.includes(v)){QW.push(v);rebuildRoleBtns();arr=QW;}
+  else if(key==='c'&&!CUPS.includes(v)){CUPS.push(v);arr=CUPS;}
+  else if(key==='s'&&!SITS.includes(v)){SITS.push(v);arr=SITS;}
+  else if(key==='web'&&!WEBLIST.includes(v)){WEBLIST.push(v);arr=WEBLIST;}
+  else if(key==='tf3'&&!TF3.includes(v)){TF3.push(v);arr=TF3;}
+  else if(key==='tfh'&&!TFH.includes(v)){TFH.push(v);rebuildRoleBtns();arr=TFH;}
+  el.value='';renderLlistes();render();
+  if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
+}
+function removeFromList(key,v){
+  let arr=null;
+  if(key==='g'){G=G.filter(x=>x!==v);arr=G;}
+  else if(key==='t'){T=T.filter(x=>x!==v);rebuildRoleBtns();arr=T;}
+  else if(key==='qw'){QW=QW.filter(x=>x!==v);rebuildRoleBtns();arr=QW;}
+  else if(key==='c'){CUPS=CUPS.filter(x=>x!==v&&x!=='');if(!CUPS.includes(''))CUPS.unshift('');arr=CUPS;}
+  else if(key==='s'){SITS=SITS.filter(x=>x!==v&&x!=='');if(!SITS.includes(''))SITS.unshift('');arr=SITS;}
+  else if(key==='web'){WEBLIST=WEBLIST.filter(x=>x!==v);arr=WEBLIST;}
+  else if(key==='tf3'){TF3=TF3.filter(x=>x!==v);arr=TF3;}
+  else if(key==='tfh'){TFH=TFH.filter(x=>x!==v);rebuildRoleBtns();arr=TFH;}
+  renderLlistes();render();
+  if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
+}
+
+/* ═══════════════════════════════════════════════
+   13. NEON — CONNEXIÓ I PERSISTÈNCIA
+═══════════════════════════════════════════════ */
+const NEON_CONN='postgresql://neondb_owner:npg_wCyd8sYr0cBb@ep-rapid-butterfly-abxlbyao-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+let neonSql=null;
+async function initNeon(){if(neonSql)return;const{neon}=await import('https://esm.sh/@neondatabase/serverless');neonSql=neon(NEON_CONN);}
+async function neonQuery(sql,params=[]){await initNeon();const res=params.length?await neonSql.query(sql,params):await neonSql.query(sql);return{rows:res.rows||res};}
+
+async function getMasterPw(){
+  const r=await neonQuery('SELECT pw FROM admin_config WHERE id=1');
+  return r.rows[0]?.pw||'';
+}
+async function setMasterPw(v){
+  await neonQuery('INSERT INTO admin_config(id,pw) VALUES(1,$1) ON CONFLICT(id) DO UPDATE SET pw=$1',[v]);
+}
+async function getAllLists(){
+  const r=await neonQuery('SELECT key,items FROM app_lists');
+  const m={};
+  r.rows.forEach(row=>{m[row.key]=typeof row.items==='string'?JSON.parse(row.items):row.items;});
+  return m;
+}
+async function setList(key,items){
+  await neonQuery(`INSERT INTO app_lists(key,items) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET items=$2`,[key,JSON.stringify(items)]);
+}
+async function getPins(){
+  const r=await neonQuery('SELECT name,pin FROM user_pins');
+  const m={};
+  r.rows.forEach(row=>{if(row.pin)m[row.name]=row.pin;});
+  return m;
+}
+async function setPin(name,pin){
+  pins[name]=pin;
+  try{await neonQuery(`INSERT INTO user_pins(name,pin) VALUES($1,$2) ON CONFLICT(name) DO UPDATE SET pin=$2`,[name,pin]);}
+  catch(e){console.warn('Error desant PIN:',e);}
+}
+
+async function sbGet(){
+  const res=await neonQuery(`SELECT * FROM ${YEAR_CONFIG.table} ORDER BY id ASC`);
+  return res.rows||[];
+}
+async function sbInsert(d){
+  const s=rowToSb(d);
+  const res=await neonQuery(
+    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
+  );
+  return res.rows?.[0];
+}
+async function sbUpdate(id,d){
+  const s=rowToSb(d);
+  // Comprovació de conflicte: algú altre pot haver modificat aquest registre mentre l'editaves
+  const chk=await neonQuery(`SELECT updated_at FROM ${YEAR_CONFIG.table} WHERE id=$1`,[id]);
+  const serverTs=chk.rows?.[0]?.updated_at;
+  if(d.updated_at&&serverTs&&new Date(serverTs).getTime()!==new Date(d.updated_at).getTime()){
+    const overwrite=confirm("⚠️ Aquest registre l'ha modificat un altre usuari mentre l'editaves.\n\nAcceptar = sobreescriure amb els teus canvis\nCancel·lar = descartar els teus canvis i recarregar les dades actuals");
+    if(!overwrite){
+      const fresh=await neonQuery(`SELECT * FROM ${YEAR_CONFIG.table} WHERE id=$1`,[id]);
+      if(fresh.rows?.[0]){
+        const idx=D.findIndex(x=>x.id===id);
+        if(idx>-1){D[idx]=sbToRow(fresh.rows[0]);calcTickets();render();}
+      }
+      throw new Error('CANCELLED_BY_USER');
+    }
+  }
+  const res=await neonQuery(
+    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cont=$5,mob=$6,email=$7,url_web=$8,url_web_check=$9,reg=$10,sit=$11,tke=$12,f1q=$13,f1d=$14,f2q=$15,f2d=$16,f3q=$17,f3d=$18,web=$19,webq=$20,ita=$21,fhq=$22,hora=$23,pres=$24,presentat=$25,resguard=$26,notes=$27,updated_at=NOW() WHERE id=$28 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
+  );
+  d.updated_at=res.rows?.[0]?.updated_at;
+}
+async function sbDelete(id){
+  await neonQuery(`DELETE FROM ${YEAR_CONFIG.table} WHERE id=$1`,[id]);
+}
+
+async function sbGetAdmins(){
+  const res=await neonQuery(`SELECT name,password FROM admins ORDER BY id ASC`);
+  return res.rows;
+}
+async function sbAddAdmin(name,password){
+  await neonQuery(`INSERT INTO admins(name,password) VALUES ($1,$2) ON CONFLICT (name) DO UPDATE SET password=$2`,[name,password]);
+}
+async function sbRemoveAdmin(name){
+  await neonQuery(`DELETE FROM admins WHERE name=$1`,[name]);
+}
+async function sbSetAdminPassword(name,password){
+  await neonQuery(`UPDATE admins SET password=$1 WHERE name=$2`,[password,name]);
+}
+
+function rowToSb(d){
+  return {g:d.g,emp:d.emp,nova:d.nova,cup:d.cup,cont:d.cont,mob:d.mob,email:d.email,
+    url_web:d.url_web,url_web_check:d.url_web_check,
+    reg:d.reg,sit:d.sit,tke:d.tke,f1q:d.f1q,f1d:d.f1d,f2q:d.f2q,f2d:d.f2d,
+    f3q:d.f3q,f3d:d.f3d,web:d.web,webq:d.webq,ita:d.ita,fhq:d.fhq,hora:d.hora,
+    pres:d.pres,presentat:d.presentat,resguard:d.resguard,notes:d.notes};
+}
+function sbToRow(r){
+  return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',
+    cont:r.cont||'',mob:r.mob||'',email:r.email||'',
+    url_web:r.url_web||'',url_web_check:r.url_web_check||'',reg:r.reg||'',
+    sit:r.sit||'POTENCIAL',tke:r.tke||'',f1q:r.f1q||'',f1d:r.f1d||'',
+    f2q:r.f2q||'',f2d:r.f2d||'',f3q:r.f3q||'',f3d:r.f3d||'',web:r.web||'',webq:r.webq||'',
+    ita:r.ita||'',fhq:r.fhq||'',hora:r.hora||'',pres:r.pres||'',
+    presentat:!!r.presentat,resguard:!!r.resguard,notes:r.notes||'',updated_at:r.updated_at||null};
+}
+
+// Indicador de guardat
+function showSaving(){
+  let el=document.getElementById('sb-status');
+  if(!el){el=document.createElement('div');el.id='sb-status';
+    el.style='position:fixed;bottom:10px;right:10px;background:#2c5aa0;color:#fff;padding:5px 12px;border-radius:4px;font-size:9pt;z-index:9999';
+    document.body.appendChild(el);}
+  el.textContent='💾 Guardant...';el.style.display='block';
+}
+function showSaved(){
+  const el=document.getElementById('sb-status');
+  if(el){el.textContent='✓ Guardat';setTimeout(()=>el.style.display='none',1500);}
+}
+function showError(msg){
+  const el=document.getElementById('sb-status');
+  if(el){el.style.background='#c00';el.textContent='⚠ Error: '+msg;setTimeout(()=>el.style.display='none',3000);}
+}
+
+/* ═══════════════════════════════════════════════
+   14. INICIALITZACIÓ — Carrega des de Neon
+═══════════════════════════════════════════════ */
+async function init(){
+  try{
+    const rows=await sbGet();
+    D=rows.map(sbToRow);
+    nid=D.length>0?Math.max(...D.map(x=>x.id))+1:1;
+    calcTickets();render();
+  }catch(e){
+    console.error('Error carregant dades:',e);
+    render(); // mostra buit si falla
+  }
+  try{
+    const admins=await sbGetAdmins();
+    A=['Admin',...admins.map(x=>x.name)];
+    ADMIN_PWS={};admins.forEach(x=>ADMIN_PWS[x.name]=x.password);
+    rebuildAdminBtns();
+  }catch(e){
+    console.error('Error carregant llista d\'admins:',e);
+  }
+  try{
+    const[pw,lists,pinMap]=await Promise.all([getMasterPw(),getAllLists(),getPins()]);
+    if(pw)ADMIN_PW_MASTER=pw;
+    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.qw)QW=lists.qw;
+    if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
+    if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
+    pins=pinMap;
+    rebuildRoleBtns();render();
+  }catch(e){
+    console.error('Error carregant configuració (contrasenya/llistes/PINs):',e);
+  }
+}
+
+// Sobreescriure addRow per guardar a Neon
+const _addRow=addRow;
+async function addRow(){
+  if(!adminLevel){togglePanel('admin');return;} // demanar password si no autenticat
+  const nou={id:nid++,g:'',emp:'',nova:false,cup:'',cont:'',mob:'',email:'',url_web:'',url_web_check:'',
+    reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
+    web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:''};
+  showSaving();
+  try{
+    const saved=await sbInsert(nou);
+    if(saved){nou.id=saved.id;nou.updated_at=saved.updated_at;}
+    D.push(nou);nid=nou.id+1;
+    calcTickets();render();showSaved();
+  }catch(e){showError(e.message);}
+}
+
+// Sobreescriure delRow per esborrar a Neon
+async function delRow(id){
+  if(!confirm('Eliminar aquest registre?'))return;
+  showSaving();
+  try{
+    await sbDelete(id);
+    const i=D.findIndex(x=>x.id===id);
+    if(i>-1)D.splice(i,1);
+    calcTickets();render();showSaved();
+  }catch(e){showError(e.message);}
+}
+
+// Sobreescriure sv per guardar a Neon
+const _sv=sv;
+async function sv(el){
+  const id=+el.dataset.id,f=el.dataset.f;
+  const d=D.find(x=>x.id===id);
+  if(!d)return;
+  let v=el.textContent.trim();
+  if(f==='emp'){
+    v=v.toUpperCase();
+  } else if(f==='reg'){
+    v=addTimestamp(fmtDate(v));
+    if(v&&(d.sit===''||d.sit==='POTENCIAL'))d.sit='PROCÉS';
+    if(!v&&d.sit==='PROCÉS')d.sit='POTENCIAL';
+  } else if(['f1d','f2d','f3d'].includes(f)){
+    v=fmtDate(v);
+  } else if(f==='hora'){
+    v=fmtHora(v);
+  }
+  d[f]=v;checkAutoComplete(d);calcTickets();
+  showSaving();
+  try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}
+  render();
+}
+
+// Sobreescriure svs per guardar a Neon
+const _svs=svs;
+async function svs(id,f,v){
+  const d=D.find(x=>x.id===id);
+  if(!d)return;
+  d[f]=v;
+  if(f==='cup'){if(v==='IA'&&!d.ita)d.ita='DEMANAR';if(v!=='IA')d.ita='';}
+  checkAutoComplete(d);calcTickets();
+  showSaving();
+  try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}
+  render();
+}
+
+// Sobreescriure svSit per guardar a Neon
+const _svSit=svSit;
+async function svSit(id,val){
+  document.querySelectorAll('.sit-drop.open').forEach(x=>x.classList.remove('open'));
+  const d=D.find(x=>x.id===id);
+  if(!d)return;
+  if(['COMPLETAT','PROCÉS'].includes(val)&&!d.reg)return;
+  d.sit=val;calcTickets();
+  showSaving();
+  try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}
+  render();
+}
+
+// Sobreescriure svIta per guardar a Neon
+async function svIta(id,val){
+  document.querySelectorAll('.ita-drop.open').forEach(x=>x.classList.remove('open'));
+  const d=D.find(x=>x.id===id);
+  if(!d)return;
+  d.ita=val;
+  showSaving();
+  try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}
+  render();
+}
+
+init();
+
+// ── POLLING: actualitza dades cada 5 segons ──
+setInterval(async()=>{
+  // No actualitzar si l'usuari està editant activament
+  if(document.activeElement&&document.activeElement.classList.contains('ed'))return;
+  try{
+    const rows=await sbGet();
+    const nouD=rows.map(sbToRow);
+    if(JSON.stringify(nouD)!==JSON.stringify(D)){
+      D=nouD;
+      nid=D.length>0?Math.max(...D.map(x=>x.id))+1:1;
+      calcTickets();render();
+    }
+  }catch(e){console.warn('Polling error:',e);}
+  try{
+    const admins=await sbGetAdmins();
+    const nouA=['Admin',...admins.map(x=>x.name)];
+    const nouPws={};admins.forEach(x=>nouPws[x.name]=x.password);
+    // Revocació en calent: si el Master ha eliminat aquest admin o li ha canviat la contrasenya, es tanca la sessió
+    if(cT==='a'&&cU!=='Admin'&&adminLevel&&(!nouA.includes(cU)||nouPws[cU]!==myAdminPw)){
+      adminLevel='';myAdminPw='';authedAs='';cU='Admin';cT='a';
+      A=nouA;ADMIN_PWS=nouPws;
+      rebuildAdminBtns();render();
+      alert('El Master t\'ha revocat l\'accés d\'Admin.');
+    }else if(JSON.stringify(nouA)!==JSON.stringify(A)||JSON.stringify(nouPws)!==JSON.stringify(ADMIN_PWS)){
+      A=nouA;ADMIN_PWS=nouPws;
+      rebuildAdminBtns();
+      if(document.getElementById('panel-admin').classList.contains('open'))renderAdminList();
+    }
+  }catch(e){console.warn('Polling admins error:',e);}
+  try{
+    const[pw,lists,pinMap]=await Promise.all([getMasterPw(),getAllLists(),getPins()]);
+    let changed=false;
+    if(pw&&pw!==ADMIN_PW_MASTER){ADMIN_PW_MASTER=pw;}
+    if(JSON.stringify(pinMap)!==JSON.stringify(pins)){pins=pinMap;changed=true;}
+    const curLists={g:G,t:T,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH};
+    Object.keys(curLists).forEach(k=>{
+      if(lists[k]&&JSON.stringify(lists[k])!==JSON.stringify(curLists[k]))changed=true;
+    });
+    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.qw)QW=lists.qw;
+    if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
+    if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
+    if(changed)render();
+  }catch(e){console.warn('Polling config error:',e);}
+},2000);

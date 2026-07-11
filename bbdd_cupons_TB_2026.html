@@ -390,27 +390,30 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
       <span id="pw-ok" style="color:green;font-size:9pt;display:none">✓</span>
     </div>
     </div>
+    <hr style="margin:12px 0;border:none;border-top:1px solid #eee">
+    <button onclick="adminLogout()" style="padding:4px 14px;border:1px solid #bbb;border-radius:4px;cursor:pointer;font-size:9pt;background:#f5f5f5">🔓 Sortir del mode Admin</button>
   </div>
 </div>
 
 <!-- ═══════════════ PANELL LLISTES ═══════════════ -->
 <div class="panel" id="panel-llistes">
-  <span class="panel-close" onclick="closeAllPanels(true)">×</span>
+  <span class="panel-close" onclick="closeAllPanels()">×</span>
   <h3>☰ Llistes</h3>
   <div id="llistes-contingut"></div>
-  <div style="margin-top:14px;text-align:right"><button onclick="closeAllPanels(true)" style="padding:4px 14px;border:1px solid #bbb;border-radius:4px;cursor:pointer;font-size:9pt;background:#f5f5f5">Tancar sessió ☰ Llistes</button></div>
 </div>
 
 <script>
 /* ═══════════════════════════════════════════════
    1. CONFIGURACIÓ I DADES
 ═══════════════════════════════════════════════ */
-let ADMIN_PW_MASTER='cuponsTB';
+let ADMIN_PW_MASTER='cuponsTB'; // valor per defecte; es sobreescriu des de Neon a init()
 let ADMIN_PWS={}; // {nom: contrasenya} — un Admin, una contrasenya pròpia, assignada pel Master
 let myAdminPw=''; // contrasenya amb la qual l'Admin actual ha entrat (per detectar revocacions)
 let authedAs=''; // nom amb el qual s'ha superat el checkPw() actual
 let adminLevel=''; // '' | 'admin' | 'master'
 let A=['Admin'];
+let pins={}; // {nom Tramitador/Presentador: PIN}
+let unlockedNames=new Set(); // noms desbloquejats amb PIN durant aquesta sessió
 let G=['JE','JR','OG'];
 let T=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL'];
 let P=[...T];
@@ -562,15 +565,16 @@ function delRow_placeholder(){} // sobreescrita per Supabase
 /* ═══════════════════════════════════════════════
    4. PERMISOS
 ═══════════════════════════════════════════════ */
+const HELPER_FIELDS=['emp','cont','mob','email','reg','notes']; // camps que pot tocar un Admin ajudant (no Master)
 function canEd(d,f){
   if(fHora){
-    if(f==='hora')return cT==='a'&&adminLevel?!!d.fhq:(d.sit==='COMPLETAT'&&!d.hora&&d.fhq===cU);
+    if(f==='hora')return cT==='a'&&adminLevel==='master'?!!d.fhq:(d.sit==='COMPLETAT'&&!d.hora&&d.fhq===cU);
     return false;
   }
   if(cT==='a'){
-    if(!adminLevel) return false; // no autenticat → només lectura
-    if(f==='hora') return !!d.fhq;
-    return true;
+    if(adminLevel==='master'){ if(f==='hora') return !!d.fhq; return true; }
+    if(adminLevel==='admin') return HELPER_FIELDS.includes(f);
+    return false; // no autenticat → només lectura
   }
   if(cT==='g')return false;
   if(cT==='p'){
@@ -605,18 +609,18 @@ function sel(d,f,list,v){
 }
 function selFQ(d,n){
   const f='f'+n+'q', lst=n===1?T:n===2?G:TF3, v=d[f];
-  if(cT!=='a')return `<span>${v||''}</span>`;
+  if(cT!=='a'||!adminLevel)return `<span>${v||''}</span>`;
   return `<select onchange="svs(${d.id},'${f}',this.value)"><option value=""></option>${lst.map(x=>`<option${v===x?' selected':''}>${x}</option>`).join('')}</select>`;
 }
 function selFH(d){
-  if(cT!=='a')return `<span>${d.fhq||''}</span>`;
+  if(cT!=='a'||adminLevel!=='master')return `<span>${d.fhq||''}</span>`;
   return `<select onchange="svs(${d.id},'fhq',this.value)"><option value=""></option>${TFH.map(x=>`<option${d.fhq===x?' selected':''}>${x}</option>`).join('')}</select>`;
 }
 function sitCell(d){
   const sc=SIT_COLORS[d.sit]||{};
   const bg=sc.bg||'',fg=sc.fg||'#222';
   const label=d.sit||'';
-  const canEditSit=cT==='a'||(cT==='t'&&d.sit!=='COMPLETAT');
+  const canEditSit=(cT==='a'&&adminLevel==='master')||(cT==='t'&&d.sit!=='COMPLETAT');
   if(!canEditSit)return `<div style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
   const opts=(cT==='t'?SITS.filter(s=>s&&s!=='COMPLETAT'&&s!=='PROCÉS'):SITS.filter(s=>s))
     .map(s=>{const c=SIT_COLORS[s]||{};return `<div class="sit-opt" style="background:${c.bg||'#fff'};color:${c.fg||'#222'}" onclick="svSit(${d.id},'${s}')">${s}</div>`;}).join('');
@@ -631,7 +635,7 @@ function itaCell(d){
   const bgStyle=ic.bg?`background:${ic.bg};`:'';
   const label=v||'No aplica';
   if(d.cup!=='IA')return `<td class="cita" style="${bgStyle}color:${ic.fg};text-align:center">${label}</td>`;
-  if(cT!=='a')return `<td class="cita" style="${bgStyle}color:${ic.fg};text-align:center">${label}</td>`;
+  if(cT!=='a'||adminLevel!=='master')return `<td class="cita" style="${bgStyle}color:${ic.fg};text-align:center">${label}</td>`;
   const opts=['No aplica','DEMANAR','DEMANAT','REBUT'].map(s=>{
     const key=s==='No aplica'?'':s;
     const c=ITA_COLORS[key]||ITA_COLORS[''];
@@ -646,38 +650,38 @@ function itaCell(d){
 function webCell(d){
   const wc=WEB_COLORS[d.web]||{};
   const bgStyle=wc.bg?`background:${wc.bg};color:${wc.fg};`:'';
-  const canW=(cT==='a'&&!fHora)||(cT==='t'&&(d.f1q===cU||d.f2q===cU||d.f3q===cU));
+  const canW=(cT==='a'&&adminLevel==='master'&&!fHora)||(cT==='t'&&(d.f1q===cU||d.f2q===cU||d.f3q===cU));
   if(!canW)return `<td class="cweb webcel" style="${bgStyle}"><span>${d.web||''}</span></td>`;
   return `<td class="cweb webcel" style="${bgStyle}"><select style="${bgStyle}width:100%" onchange="svs(${d.id},'web',this.value)">
     <option value=""></option>${WEBLIST.map(x=>`<option value="${x}"${d.web===x?' selected':''}>${x}</option>`).join('')}
   </select></td>`;
 }
 function presCell(d){
-  if(cT!=='a')return `<td class="cpres">${d.pres||''}</td>`;
+  if(cT!=='a'||adminLevel!=='master')return `<td class="cpres">${d.pres||''}</td>`;
   return `<td class="cpres"><select onchange="svs(${d.id},'pres',this.value)"><option value=""></option>${P.map(x=>`<option${d.pres===x?' selected':''}>${x}</option>`).join('')}</select></td>`;
 }
 function presTd(d){
-  const canP=d.sit==='COMPLETAT'&&d.pres&&(cT==='a'||(cT==='p'&&d.pres===cU));
+  const canP=d.sit==='COMPLETAT'&&d.pres&&((cT==='a'&&adminLevel==='master')||(cT==='p'&&d.pres===cU));
   return `<td class="cpret webcel"><input type="checkbox"${d.presentat?' checked':''}${canP?'':' disabled'} onchange="svs(${d.id},'presentat',this.checked)"></td>`;
 }
 function resguardTd(d){
   const bg=d.presentat&&!d.resguard?'background:#F4CCCC;color:#000;':'';
-  const canR=d.sit==='COMPLETAT'&&d.presentat&&(cT==='a'||(cT==='p'&&d.pres===cU));
+  const canR=d.sit==='COMPLETAT'&&d.presentat&&((cT==='a'&&adminLevel==='master')||(cT==='p'&&d.pres===cU));
   return `<td class="crsgd webcel" style="${bg}"><input type="checkbox"${d.resguard?' checked':''}${canR?'':' disabled'} onchange="svs(${d.id},'resguard',this.checked)"></td>`;
 }
-function rowHtml(d,isAdmin){
+function rowHtml(d,isMaster){
   return `<tr>
-    <td style="text-align:center;padding:2px">${isAdmin?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold" title="Eliminar">×</button>`:''}</td>
+    <td style="text-align:center;padding:2px">${isMaster?`<button onclick="delRow(${d.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold" title="Eliminar">×</button>`:''}</td>
     <td class="cg">${sel(d,'g',G,d.g)}</td>
     <td class="cemp">${ec(d,'emp',d.emp)}</td>
-    <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${cT==='a'?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
+    <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${(cT==='a'&&adminLevel)?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
     <td class="ccup">${sel(d,'cup',CUPS,d.cup)}</td>
     <td class="ccon">${ec(d,'cont',d.cont)}</td>
     <td class="cmob">${ec(d,'mob',d.mob)}</td>
     <td class="ceml">${ovCell(d.email,ec(d,'email',d.email))}</td>
     <td class="csit">${sitCell(d)}</td>
     <td class="creg">${ec(d,'reg',d.reg)}</td>
-    <td class="ctke" style="text-align:center;color:#555">${isAdmin&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
+    <td class="ctke" style="text-align:center;color:#555">${isMaster&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
     <td class="cfq">${selFQ(d,1)}</td><td class="cfd">${ec(d,'f1d',d.f1d)}</td>
     <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
     <td class="cfq">${selFQ(d,3)}</td><td class="cfd">${ec(d,'f3d',d.f3d)}</td>
@@ -701,12 +705,12 @@ function toggleGroup(sit){
 function render(){
   rebuildRoleBtns();
 
-  const hints={a:adminLevel==='master'?'Master autenticat — edició completa i gestió d\'admins.':adminLevel==='admin'?`Admin ${cU} autenticat — edició completa.`:'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
+  const hints={a:adminLevel==='master'?'Master autenticat — edició completa i gestió d\'admins.':adminLevel==='admin'?`Admin ${cU} — creació de registres i dades bàsiques.`:'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
     t:`Tramitador ${cU} — editeu les vostres fitxes.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`};
   document.getElementById('hint-txt').textContent=hints[cT]||'';
 
   document.getElementById('btn-nova').style.display=cT==='a'?'inline-block':'none';
-  const isAdmin=cT==='a'&&!!adminLevel;
+  const canAddRow=cT==='a'&&!!adminLevel;
   const isMaster=cT==='a'&&adminLevel==='master';
   const webPendent=D.filter(d=>['COMPLETAT','PROCÉS'].includes(d.sit)&&d.web!=='SI').length;
   const btnWeb=document.getElementById('btnWeb');
@@ -714,10 +718,10 @@ function render(){
   btnWeb.style.fontWeight=webPendent>0?'bold':'normal';
   btnWeb.style.background=webPendent>0?'#F4CCCC':'';
   btnWeb.style.borderColor=webPendent>0?'#c00':'';
-  document.getElementById('btn-nova').style.opacity=isAdmin?'1':'0.4';
-  document.getElementById('btn-nova').title=isAdmin?'':'Requereix autenticació Admin';
+  document.getElementById('btn-nova').style.opacity=canAddRow?'1':'0.4';
+  document.getElementById('btn-nova').title=canAddRow?'':'Requereix autenticació Admin';
   document.getElementById('btn-admin').style.display=cT==='a'?'inline-block':'none'; // sempre visible
-  document.getElementById('btn-llistes').style.display=isAdmin?'inline-block':'none';
+  document.getElementById('btn-llistes').style.display=isMaster?'inline-block':'none';
 
   let rows=D.filter(d=>{
     if(cT==='g'&&d.g!==cU)return false;
@@ -785,7 +789,7 @@ function render(){
     tbodyHtml+=`<tr class="group-row"><td colspan="27" style="background:${sc.bg||'#eee'};color:${sc.fg||'#333'};cursor:pointer;font-weight:bold;padding:5px 8px" onclick="toggleGroup('${g.key}')">
       <span style="display:inline-block;width:16px">${collapsed?'▶':'▼'}</span>${g.label} <span style="font-weight:normal;opacity:.8">(${groupRows.length})</span>
     </td></tr>`;
-    if(!collapsed)tbodyHtml+=groupRows.map(d=>rowHtml(d,isAdmin)).join('');
+    if(!collapsed)tbodyHtml+=groupRows.map(d=>rowHtml(d,isMaster)).join('');
   });
   document.getElementById('tbody').innerHTML=tbodyHtml;
 
@@ -886,7 +890,7 @@ function cupBadge(cup){
   return cup?`<span class="sch-cup" style="${m[cup]||''}">${cup}</span>`:'';
 }
 function schCell(d){
-  const canCheck=cT==='a'||(cT==='p'&&d.pres===cU);
+  const canCheck=(cT==='a'&&adminLevel==='master')||(cT==='p'&&d.pres===cU);
   return `<div>
     <span class="sch-cell-emp">${d.tke?d.tke+'. ':''}${d.emp}</span>${cupBadge(d.cup)}
     <div class="sch-checks">
@@ -923,10 +927,42 @@ function renderSchCupo(){
 ═══════════════════════════════════════════════ */
 function setU(u,t){
   if(t==='a'&&u!==authedAs){adminLevel='';myAdminPw='';} // canviar a una altra identitat d'Admin obliga a re-autenticar-se
+  if((t==='t'||t==='p')&&pins[u]&&!unlockedNames.has(u)){
+    promptPin(u,t);
+    return;
+  }
   cU=u;cT=t;fWeb=false;fHora=false;
   document.getElementById('btnWeb').classList.remove('active');
   document.getElementById('btnHora').classList.remove('active');
   render();
+}
+function promptPin(u,t){
+  if(document.getElementById('pin-dialog'))return;
+  const el=document.createElement('div');
+  el.id='pin-dialog';
+  el.style='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center';
+  el.innerHTML=`<div style="background:#fff;border-radius:8px;padding:20px;min-width:240px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <p style="font-size:10pt;font-weight:bold;margin-bottom:10px">PIN de ${u}</p>
+    <input type="password" id="pin-inp" style="border:1px solid #ccc;padding:4px 6px;border-radius:3px;width:100px;margin-right:6px;">
+    <button id="pin-ok-btn" style="padding:4px 12px;border:1px solid #bbb;border-radius:3px;cursor:pointer">Entrar</button>
+    <span id="pin-err" style="color:red;font-size:9pt;display:none;margin-left:6px">Incorrecte</span>
+    <div style="text-align:right;margin-top:10px"><span onclick="document.getElementById('pin-dialog').remove()" style="cursor:pointer;color:#999;font-size:9pt">Cancel·lar</span></div>
+  </div>`;
+  document.body.appendChild(el);
+  const submit=()=>{
+    const v=document.getElementById('pin-inp').value.trim();
+    if(v&&v.toUpperCase()===String(pins[u]).toUpperCase()){
+      unlockedNames.add(u);
+      document.getElementById('pin-dialog').remove();
+      setU(u,t);
+    }else{
+      document.getElementById('pin-err').style.display='inline';
+      document.getElementById('pin-inp').value='';
+    }
+  };
+  document.getElementById('pin-ok-btn').onclick=submit;
+  document.getElementById('pin-inp').addEventListener('keydown',e=>{if(e.key==='Enter')submit();});
+  setTimeout(()=>document.getElementById('pin-inp').focus(),50);
 }
 function toggleWeb(){
   fWeb=!fWeb;
@@ -980,17 +1016,14 @@ function togglePanel(id){
       document.getElementById('admin-list-wrap').style.display='none';
       document.getElementById('pw-err').style.display='none';
       document.getElementById('pw-inp').value='';
-      document.getElementById('pw-inp').style.display='';
-      document.querySelector('#panel-admin button[onclick="checkPw()"]').style.display='';
       setTimeout(()=>document.getElementById('pw-inp').focus(),50);
     }
   }else if(id==='llistes')renderLlistes();
   p.classList.add('open');ov.classList.add('open');
 }
-function closeAllPanels(fromLlistes){
+function closeAllPanels(){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
   document.getElementById('overlay').classList.remove('open');
-  if(fromLlistes){adminLevel='';myAdminPw='';authedAs='';render();}
 }
 function checkPw(){
   const v=document.getElementById('pw-inp').value;
@@ -1010,10 +1043,14 @@ function checkPw(){
     adminLevel='admin';myAdminPw=v;authedAs=cU;
   }
   document.getElementById('pw-err').style.display='none';
-  document.getElementById('pw-inp').style.display='none';
-  document.querySelector('#panel-admin button[onclick="checkPw()"]').style.display='none';
+  document.getElementById('admin-pw-zone').style.display='none';
   document.getElementById('admin-list-wrap').style.display='block';
   renderAdminList();render();
+}
+function adminLogout(){
+  adminLevel='';myAdminPw='';authedAs='';
+  closeAllPanels();
+  render();
 }
 function renderAdminList(){
   const canEdit=adminLevel==='master';
@@ -1049,10 +1086,12 @@ async function resetAdminPw(u){
   ADMIN_PWS[u]=v;
   try{await sbSetAdminPassword(u,v);showSaved();}catch(e){showError(e.message);}
 }
-function changePw(){
+async function changePw(){
   if(adminLevel!=='master')return;
   const v=document.getElementById('new-pw').value.trim();
-  if(v){ADMIN_PW_MASTER=v;document.getElementById('new-pw').value='';document.getElementById('pw-ok').style.display='inline';setTimeout(()=>document.getElementById('pw-ok').style.display='none',2000);}
+  if(!v)return;
+  ADMIN_PW_MASTER=v;document.getElementById('new-pw').value='';document.getElementById('pw-ok').style.display='inline';setTimeout(()=>document.getElementById('pw-ok').style.display='none',2000);
+  try{await setMasterPw(v);}catch(e){console.warn('Error desant contrasenya Master:',e);}
 }
 
 /* ═══════════════════════════════════════════════
@@ -1072,7 +1111,10 @@ function renderLlistes(){
   document.getElementById('llistes-contingut').innerHTML=llistes.map(l=>`
     <div class="llista-grp">
       <h4>${l.title} <span style="font-weight:normal;color:#aaa">${l.note}</span></h4>
-      ${l.arr.map(v=>`<div class="llista-item"><span>${v}</span><button class="llista-del" onclick="removeFromList('${l.key}','${v}')">×</button></div>`).join('')}
+      ${l.arr.map(v=>{
+        const pinField=(l.key==='t'||l.key==='pre')?`<input type="text" value="${pins[v]||''}" placeholder="PIN" style="width:52px;border:1px solid #ccc;border-radius:3px;padding:1px 4px;font-size:8.5pt;margin-right:4px" onchange="setPin('${v}',this.value.trim())">`:'';
+        return `<div class="llista-item"><span>${v}</span><span style="display:flex;align-items:center">${pinField}<button class="llista-del" onclick="removeFromList('${l.key}','${v}')">×</button></span></div>`;
+      }).join('')}
       <div class="llista-add">
         <input type="text" id="inp-${l.key}" placeholder="Afegir…">
         <button onclick="addToList('${l.key}')">+</button>
@@ -1083,26 +1125,30 @@ function addToList(key){
   const el=document.getElementById('inp-'+key);
   const v=el.value.trim().toUpperCase();
   if(!v)return;
-  if(key==='g'&&!G.includes(v))G.push(v);
-  else if(key==='t'&&!T.includes(v)){T.push(v);rebuildRoleBtns();}
-  else if(key==='pre'&&!P.includes(v)){P.push(v);rebuildRoleBtns();}
-  else if(key==='c'&&!CUPS.includes(v))CUPS.push(v);
-  else if(key==='s'&&!SITS.includes(v))SITS.push(v);
-  else if(key==='web'&&!WEBLIST.includes(v))WEBLIST.push(v);
-  else if(key==='tf3'&&!TF3.includes(v))TF3.push(v);
-  else if(key==='tfh'&&!TFH.includes(v))TFH.push(v);
+  let arr=null;
+  if(key==='g'&&!G.includes(v)){G.push(v);arr=G;}
+  else if(key==='t'&&!T.includes(v)){T.push(v);rebuildRoleBtns();arr=T;}
+  else if(key==='pre'&&!P.includes(v)){P.push(v);rebuildRoleBtns();arr=P;}
+  else if(key==='c'&&!CUPS.includes(v)){CUPS.push(v);arr=CUPS;}
+  else if(key==='s'&&!SITS.includes(v)){SITS.push(v);arr=SITS;}
+  else if(key==='web'&&!WEBLIST.includes(v)){WEBLIST.push(v);arr=WEBLIST;}
+  else if(key==='tf3'&&!TF3.includes(v)){TF3.push(v);arr=TF3;}
+  else if(key==='tfh'&&!TFH.includes(v)){TFH.push(v);arr=TFH;}
   el.value='';renderLlistes();render();
+  if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
 function removeFromList(key,v){
-  if(key==='g')G=G.filter(x=>x!==v);
-  else if(key==='t'){T=T.filter(x=>x!==v);rebuildRoleBtns();}
-  else if(key==='pre'){P=P.filter(x=>x!==v);rebuildRoleBtns();}
-  else if(key==='c'){CUPS=CUPS.filter(x=>x!==v&&x!=='');if(!CUPS.includes(''))CUPS.unshift('');}
-  else if(key==='s'){SITS=SITS.filter(x=>x!==v&&x!=='');if(!SITS.includes(''))SITS.unshift('');}
-  else if(key==='web')WEBLIST=WEBLIST.filter(x=>x!==v);
-  else if(key==='tf3')TF3=TF3.filter(x=>x!==v);
-  else if(key==='tfh')TFH=TFH.filter(x=>x!==v);
+  let arr=null;
+  if(key==='g'){G=G.filter(x=>x!==v);arr=G;}
+  else if(key==='t'){T=T.filter(x=>x!==v);rebuildRoleBtns();arr=T;}
+  else if(key==='pre'){P=P.filter(x=>x!==v);rebuildRoleBtns();arr=P;}
+  else if(key==='c'){CUPS=CUPS.filter(x=>x!==v&&x!=='');if(!CUPS.includes(''))CUPS.unshift('');arr=CUPS;}
+  else if(key==='s'){SITS=SITS.filter(x=>x!==v&&x!=='');if(!SITS.includes(''))SITS.unshift('');arr=SITS;}
+  else if(key==='web'){WEBLIST=WEBLIST.filter(x=>x!==v);arr=WEBLIST;}
+  else if(key==='tf3'){TF3=TF3.filter(x=>x!==v);arr=TF3;}
+  else if(key==='tfh'){TFH=TFH.filter(x=>x!==v);arr=TFH;}
   renderLlistes();render();
+  if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
 
 /* ═══════════════════════════════════════════════
@@ -1112,6 +1158,34 @@ const NEON_CONN='postgresql://neondb_owner:npg_wCyd8sYr0cBb@ep-rapid-butterfly-a
 let neonSql=null;
 async function initNeon(){if(neonSql)return;const{neon}=await import('https://esm.sh/@neondatabase/serverless');neonSql=neon(NEON_CONN);}
 async function neonQuery(sql,params=[]){await initNeon();const res=params.length?await neonSql.query(sql,params):await neonSql.query(sql);return{rows:res.rows||res};}
+
+async function getMasterPw(){
+  const r=await neonQuery('SELECT pw FROM admin_config WHERE id=1');
+  return r.rows[0]?.pw||'';
+}
+async function setMasterPw(v){
+  await neonQuery('INSERT INTO admin_config(id,pw) VALUES(1,$1) ON CONFLICT(id) DO UPDATE SET pw=$1',[v]);
+}
+async function getAllLists(){
+  const r=await neonQuery('SELECT key,items FROM app_lists');
+  const m={};
+  r.rows.forEach(row=>{m[row.key]=typeof row.items==='string'?JSON.parse(row.items):row.items;});
+  return m;
+}
+async function setList(key,items){
+  await neonQuery(`INSERT INTO app_lists(key,items) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET items=$2`,[key,JSON.stringify(items)]);
+}
+async function getPins(){
+  const r=await neonQuery('SELECT name,pin FROM user_pins');
+  const m={};
+  r.rows.forEach(row=>{if(row.pin)m[row.name]=row.pin;});
+  return m;
+}
+async function setPin(name,pin){
+  pins[name]=pin;
+  try{await neonQuery(`INSERT INTO user_pins(name,pin) VALUES($1,$2) ON CONFLICT(name) DO UPDATE SET pin=$2`,[name,pin]);}
+  catch(e){console.warn('Error desant PIN:',e);}
+}
 
 async function sbGet(){
   const res=await neonQuery(`SELECT * FROM cupons ORDER BY id ASC`);
@@ -1219,6 +1293,17 @@ async function init(){
     rebuildAdminBtns();
   }catch(e){
     console.error('Error carregant llista d\'admins:',e);
+  }
+  try{
+    const[pw,lists,pinMap]=await Promise.all([getMasterPw(),getAllLists(),getPins()]);
+    if(pw)ADMIN_PW_MASTER=pw;
+    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.pre)P=lists.pre;
+    if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
+    if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
+    pins=pinMap;
+    rebuildRoleBtns();render();
+  }catch(e){
+    console.error('Error carregant configuració (contrasenya/llistes/PINs):',e);
   }
 }
 
@@ -1342,6 +1427,20 @@ setInterval(async()=>{
       if(document.getElementById('panel-admin').classList.contains('open'))renderAdminList();
     }
   }catch(e){console.warn('Polling admins error:',e);}
+  try{
+    const[pw,lists,pinMap]=await Promise.all([getMasterPw(),getAllLists(),getPins()]);
+    let changed=false;
+    if(pw&&pw!==ADMIN_PW_MASTER){ADMIN_PW_MASTER=pw;}
+    if(JSON.stringify(pinMap)!==JSON.stringify(pins)){pins=pinMap;changed=true;}
+    const curLists={g:G,t:T,pre:P,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH};
+    Object.keys(curLists).forEach(k=>{
+      if(lists[k]&&JSON.stringify(lists[k])!==JSON.stringify(curLists[k]))changed=true;
+    });
+    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.pre)P=lists.pre;
+    if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
+    if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
+    if(changed)render();
+  }catch(e){console.warn('Polling config error:',e);}
 },2000);
 </script>
 </body>

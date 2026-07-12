@@ -1004,7 +1004,7 @@ async function renderTipusTab(){
   const master=isMasterActive();
   const actionsGrp=document.getElementById('tipus-actions-grp');
   if(actionsGrp)actionsGrp.style.display=master?'block':'none';
-  document.getElementById('tipus-hint').textContent=master?'Catàleg de tipus de requeriment (compartit entre 2026 i 2027).':'Catàleg de tipus de requeriment — només lectura.';
+  document.getElementById('tipus-hint').textContent=master?'FAQs — catàleg de tipus de requeriment (compartit entre 2026 i 2027).':'FAQs — només lectura.';
   REQ_TIPUS=await getRequerimentTipus();
   renderTipusTable();
 }

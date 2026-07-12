@@ -487,12 +487,13 @@ document.addEventListener('click',()=>document.querySelectorAll('.sit-drop.open,
    7. PESTANYES
 ═══════════════════════════════════════════════ */
 function showTab(id){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','sch-tickets','sch-cupo','requeriments'][i]===id));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','sch-tickets','sch-cupo','requeriments','tipus'][i]===id));
   document.querySelectorAll('.tab-content').forEach(d=>d.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
   if(id==='sch-tickets')renderSchTickets();
   if(id==='sch-cupo')renderSchCupo();
   if(id==='requeriments')renderRequeriments();
+  if(id==='tipus')renderTipusTab();
 }
 
 /* ═══════════════════════════════════════════════
@@ -634,7 +635,6 @@ function togglePanel(id){
       setTimeout(()=>document.getElementById('pw-inp').focus(),50);
     }
   }else if(id==='llistes')renderLlistes();
-  else if(id==='tipus'){getRequerimentTipus().then(t=>{REQ_TIPUS=t;renderTipusPanel();});}
   p.classList.add('open');ov.classList.add('open');
 }
 function closeAllPanels(){
@@ -854,6 +854,7 @@ function parseTipusIds(v){
   return [];
 }
 function ecReq(r,f,v,multi){
+  if(!isMasterActive())return `<span>${v||''}</span>`;
   return `<span class="ed" contenteditable="true" data-rid="${r.id}" data-rf="${f}" onblur="svReq(this)" onkeydown="if(event.key==='Enter'&&!${!!multi}){event.preventDefault();this.blur()}">${v||''}</span>`;
 }
 async function svReq(el){
@@ -867,15 +868,20 @@ async function svsReq(id,f,v){
   await updateRequerimentField(id,f,v);
 }
 function selReqEstat(r){
+  if(!isMasterActive())return `<span>${r.estat||''}</span>`;
   const opts=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','No aplica'];
   return `<select onchange="svsReq(${r.id},'estat',this.value)">${opts.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
 }
 function tipusBadges(r){
   const ids=parseTipusIds(r.tipus_ids);
   const names=ids.map(tid=>{const t=REQ_TIPUS.find(x=>x.id===tid);return t?t.alies.split(',')[0]:'';}).filter(Boolean);
-  return `<div style="cursor:pointer;min-width:80px" onclick="openTipusPicker(${r.id})">${names.map(n=>`<span style="display:inline-block;background:#EEEDFE;color:#534AB7;border-radius:3px;padding:1px 5px;margin:1px;font-size:8pt">${n}</span>`).join('')||'<span style="color:#aaa;font-size:8pt">+ afegir</span>'}</div>`;
+  const master=isMasterActive();
+  const badges=names.map(n=>`<span style="display:inline-block;background:#EEEDFE;color:#534AB7;border-radius:3px;padding:1px 5px;margin:1px;font-size:8pt">${n}</span>`).join('');
+  if(!master)return `<div style="min-width:80px">${badges}</div>`;
+  return `<div style="cursor:pointer;min-width:80px" onclick="openTipusPicker(${r.id})">${badges||'<span style="color:#aaa;font-size:8pt">+ afegir</span>'}</div>`;
 }
 function openTipusPicker(rid){
+  if(!isMasterActive())return;
   if(document.getElementById('tipus-picker-dialog'))return;
   const r=REQ.find(x=>x.id===rid); if(!r)return;
   const ids=parseTipusIds(r.tipus_ids);
@@ -933,8 +939,9 @@ async function delRequerimentRow(id){
   renderRequerimentsTable();
 }
 function reqRowHtml(r){
+  const master=isMasterActive();
   return `<tr>
-    <td style="text-align:center"><button onclick="delRequerimentRow(${r.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:13pt" title="Eliminar">×</button></td>
+    <td style="text-align:center">${master?`<button onclick="delRequerimentRow(${r.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:13pt" title="Eliminar">×</button>`:''}</td>
     <td>${r.c_emp||''}</td>
     <td style="text-align:center">${r.c_tke||''}</td>
     <td style="text-align:center">${r.c_cup||''}</td>
@@ -960,52 +967,58 @@ function renderRequerimentsTable(){
 }
 async function renderRequeriments(){
   const master=isMasterActive();
-  const wrap=document.getElementById('req-table-wrap');
   const hint=document.getElementById('req-hint');
   const btnNou=document.getElementById('btn-nou-req');
-  const btnTipus=document.getElementById('btn-tipus');
   if(btnNou)btnNou.style.display=master?'inline-block':'none';
-  if(btnTipus)btnTipus.style.display=master?'inline-block':'none';
-  if(!master){
-    hint.textContent='Aquesta secció només la pot gestionar el Master.';
-    wrap.style.display='none';
-    return;
-  }
-  hint.textContent='Seguiment de requeriments post-presentació (només registres COMPLETAT).';
-  wrap.style.display='block';
+  hint.textContent=master?'Seguiment de requeriments post-presentació (només registres COMPLETAT).':'Seguiment de requeriments post-presentació — només lectura.';
   const[reqs,tipus]=await Promise.all([getRequeriments(),getRequerimentTipus()]);
   REQ=reqs;REQ_TIPUS=tipus;
   renderRequerimentsTable();
 }
-function renderTipusPanel(){
-  document.getElementById('tipus-contingut').innerHTML=REQ_TIPUS.map(t=>`
-    <div style="border-bottom:1px solid #eee;padding:8px 0">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
-        <input type="text" value="${t.alies}" style="flex:1;font-weight:bold;border:1px solid #ccc;border-radius:3px;padding:3px 5px" onchange="updateTipusFieldUI(${t.id},'alies',this.value)">
-        <button class="llista-del" onclick="delTipusUI(${t.id})">×</button>
-      </div>
-      <textarea style="width:100%;margin-top:4px;font-size:9pt" rows="2" placeholder="Pregunta/requeriment" onchange="updateTipusFieldUI(${t.id},'pregunta',this.value)">${t.pregunta||''}</textarea>
-      <textarea style="width:100%;margin-top:4px;font-size:9pt" rows="2" placeholder="Comentari/aclariment" onchange="updateTipusFieldUI(${t.id},'comentari',this.value)">${t.comentari||''}</textarea>
-      <div style="display:flex;gap:6px;margin-top:4px">
-        <input type="text" placeholder="Nom recurs" value="${t.recurs_nom||''}" style="flex:1;font-size:9pt;border:1px solid #ccc;border-radius:3px;padding:3px 5px" onchange="updateTipusFieldUI(${t.id},'recurs_nom',this.value)">
-        <input type="text" placeholder="Link recurs" value="${t.recurs_link||''}" style="flex:2;font-size:9pt;border:1px solid #ccc;border-radius:3px;padding:3px 5px" onchange="updateTipusFieldUI(${t.id},'recurs_link',this.value)">
-      </div>
-    </div>`).join('');
+function ecTipus(t,f,v,multi){
+  if(!isMasterActive())return `<span>${v||''}</span>`;
+  return `<span class="ed" contenteditable="true" data-tid="${t.id}" data-tf="${f}" onblur="svTipus(this)" onkeydown="if(event.key==='Enter'&&!${!!multi}){event.preventDefault();this.blur()}">${v||''}</span>`;
 }
-async function updateTipusFieldUI(id,f,v){
+async function svTipus(el){
+  const id=+el.dataset.tid, f=el.dataset.tf;
+  const v=el.textContent.trim();
   const t=REQ_TIPUS.find(x=>x.id===id); if(t)t[f]=v;
   await updateTipusField(id,f,v);
 }
+function tipusRowHtml(t){
+  const master=isMasterActive();
+  return `<tr>
+    <td style="text-align:center">${master?`<button onclick="delTipusUI(${t.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:13pt" title="Eliminar">×</button>`:''}</td>
+    <td>${ecTipus(t,'alies',t.alies)}</td>
+    <td class="ncell">${ecTipus(t,'pregunta',t.pregunta,true)}</td>
+    <td class="ncell">${ecTipus(t,'comentari',t.comentari,true)}</td>
+    <td>${ecTipus(t,'recurs_nom',t.recurs_nom)}</td>
+    <td>${ecTipus(t,'recurs_link',t.recurs_link)}</td>
+  </tr>`;
+}
+function renderTipusTable(){
+  document.getElementById('tipus-tbody').innerHTML=REQ_TIPUS.map(t=>tipusRowHtml(t)).join('');
+}
+async function renderTipusTab(){
+  const master=isMasterActive();
+  const btnNou=document.getElementById('btn-nou-tipus');
+  if(btnNou)btnNou.style.display=master?'inline-block':'none';
+  document.getElementById('tipus-hint').textContent=master?'Catàleg de tipus de requeriment (compartit entre 2026 i 2027).':'Catàleg de tipus de requeriment — només lectura.';
+  REQ_TIPUS=await getRequerimentTipus();
+  renderTipusTable();
+}
 async function delTipusUI(id){
+  if(!isMasterActive())return;
   if(!confirm('Eliminar aquest tipus del catàleg?'))return;
   await deleteTipusRow(id);
   REQ_TIPUS=REQ_TIPUS.filter(x=>x.id!==id);
-  renderTipusPanel();
+  renderTipusTable();
 }
 async function addTipusForm(){
-  const id=await insertTipusRow('Nou tipus','','','','');
+  if(!isMasterActive())return;
+  await insertTipusRow('Nou tipus','','','','');
   REQ_TIPUS=await getRequerimentTipus();
-  renderTipusPanel();
+  renderTipusTable();
 }
 
 async function sbGet(){

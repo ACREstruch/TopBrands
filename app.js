@@ -968,8 +968,8 @@ function renderRequerimentsTable(){
 async function renderRequeriments(){
   const master=isMasterActive();
   const hint=document.getElementById('req-hint');
-  const btnNou=document.getElementById('btn-nou-req');
-  if(btnNou)btnNou.style.display=master?'inline-block':'none';
+  const actionsGrp=document.getElementById('req-actions-grp');
+  if(actionsGrp)actionsGrp.style.display=master?'block':'none';
   hint.textContent=master?'Seguiment de requeriments post-presentació (només registres COMPLETAT).':'Seguiment de requeriments post-presentació — només lectura.';
   const[reqs,tipus]=await Promise.all([getRequeriments(),getRequerimentTipus()]);
   REQ=reqs;REQ_TIPUS=tipus;
@@ -989,6 +989,7 @@ function tipusRowHtml(t){
   const master=isMasterActive();
   return `<tr>
     <td style="text-align:center">${master?`<button onclick="delTipusUI(${t.id})" style="border:none;background:none;cursor:pointer;color:#c00;font-size:13pt" title="Eliminar">×</button>`:''}</td>
+    <td style="text-align:center;color:#555">${t.id}</td>
     <td>${ecTipus(t,'alies',t.alies)}</td>
     <td class="ncell">${ecTipus(t,'pregunta',t.pregunta,true)}</td>
     <td class="ncell">${ecTipus(t,'comentari',t.comentari,true)}</td>
@@ -1001,8 +1002,8 @@ function renderTipusTable(){
 }
 async function renderTipusTab(){
   const master=isMasterActive();
-  const btnNou=document.getElementById('btn-nou-tipus');
-  if(btnNou)btnNou.style.display=master?'inline-block':'none';
+  const actionsGrp=document.getElementById('tipus-actions-grp');
+  if(actionsGrp)actionsGrp.style.display=master?'block':'none';
   document.getElementById('tipus-hint').textContent=master?'Catàleg de tipus de requeriment (compartit entre 2026 i 2027).':'Catàleg de tipus de requeriment — només lectura.';
   REQ_TIPUS=await getRequerimentTipus();
   renderTipusTable();

@@ -378,7 +378,7 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
 <!-- ═══════════════ TAB REQUERIMENTS ═══════════════ -->
 <div id="tab-requeriments" class="tab-content">
   <div class="top-row">
-    <div class="grp recompte-grp">
+    <div class="grp recompte-grp" id="req-actions-grp">
       <div class="nova-row">
         <button class="btn-action" id="btn-nou-req" onclick="addRequeriment()">+ Nou requeriment</button>
       </div>
@@ -418,7 +418,7 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
 <!-- ═══════════════ TAB CATÀLEG DE TIPUS ═══════════════ -->
 <div id="tab-tipus" class="tab-content">
   <div class="top-row">
-    <div class="grp recompte-grp">
+    <div class="grp recompte-grp" id="tipus-actions-grp">
       <div class="nova-row">
         <button class="btn-action" id="btn-nou-tipus" onclick="addTipusForm()">+ Nou tipus</button>
       </div>
@@ -430,6 +430,7 @@ td.ccup, thead tr:first-child th:nth-child(5){box-shadow:inset -3px 0 0 #E8622A;
       <thead>
         <tr>
           <th></th>
+          <th>ID</th>
           <th>Àlies</th>
           <th>Pregunta / Requeriment</th>
           <th>Comentari / Aclariment</th>

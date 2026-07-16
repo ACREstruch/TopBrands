@@ -37,9 +37,9 @@ const ITA_COLORS={
 };
 const WEB_COLORS={'NO':{bg:'#F4CCCC',fg:'#000'},'SBY':{bg:'#FFEB9C',fg:'#222'}};
 const REQ_ESTAT_COLORS={
-  'PENDENT PRESENTACIÓ':{bg:'#FFEB9C',fg:'#222'},
-  'PRESENTAT':          {bg:'#DAF2D0',fg:'#222'},
-  'PERDUT':             {bg:'#F4CCCC',fg:'#000'},
+  'PENDENT PRESENTACIÓ':{bg:'#FFD966',fg:'#3d2b00'},
+  'PRESENTAT':          {bg:'#8FD19E',fg:'#163d1f'},
+  'PERDUT':             {bg:'#EA9999',fg:'#4a0000'},
 };
 const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padStart(2,'0')}:00`);if(i<15)h.push(`${String(i).padStart(2,'0')}:30`);}return h;})();
 
@@ -874,10 +874,12 @@ async function svsReq(id,f,v){
 }
 function selReqEstat(r){
   const c=REQ_ESTAT_COLORS[r.estat]||{};
-  const style=c.bg?` style="background:${c.bg};color:${c.fg}"`:'';
-  if(!isMasterActive())return `<span${style}>${r.estat||''}</span>`;
+  const bg=c.bg||'',fg=c.fg||'#222';
+  const label=r.estat||'N/A';
+  if(!isMasterActive())return `<div style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
+  const style=bg?` style="background:${bg};color:${fg}"`:'';
   const opts=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','No aplica'];
-  return `<select${style} onchange="svsReq(${r.id},'estat',this.value)">${opts.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
+  return `<select${style} onchange="svsReq(${r.id},'estat',this.value)">${opts.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'N/A'}</option>`).join('')}</select>`;
 }
 function tipusBadges(r){
   const ids=parseTipusIds(r.tipus_ids);

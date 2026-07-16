@@ -288,6 +288,7 @@ function rowHtml(d,isMaster){
     <td class="cg">${sel(d,'g',G,d.g)}</td>
     <td class="cemp">${ec(d,'emp',d.emp)}</td>
     <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${(cT==='a'&&adminLevel)?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
+    <td class="ccupant">${sel(d,'cup_ant',CUPS,d.cup_ant)}</td>
     <td class="ccup">${sel(d,'cup',CUPS,d.cup)}</td>
     <td class="ccon">${ec(d,'cont',d.cont)}</td>
     <td class="cmob">${ec(d,'mob',d.mob)}</td>
@@ -444,11 +445,11 @@ function adjustTableHeight(){
 }
 function updateStickyOffsets(){
   const ths=document.querySelectorAll('thead tr:first-child th');
-  if(ths.length<5)return;
+  if(ths.length<6)return;
   const root=document.documentElement.style;
   let sum=0;
   root.setProperty('--stick1','0px');
-  for(let i=0;i<4;i++){
+  for(let i=0;i<5;i++){
     sum+=ths[i].offsetWidth;
     root.setProperty('--stick'+(i+2),sum+'px');
   }
@@ -1038,8 +1039,8 @@ async function sbGet(){
 async function sbInsert(d){
   const s=rowToSb(d);
   const res=await neonQuery(
-    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27) RETURNING *`,
-    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
+    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
   );
   return res.rows?.[0];
 }
@@ -1060,8 +1061,8 @@ async function sbUpdate(id,d){
     }
   }
   const res=await neonQuery(
-    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cont=$5,mob=$6,email=$7,url_web=$8,url_web_check=$9,reg=$10,sit=$11,tke=$12,f1q=$13,f1d=$14,f2q=$15,f2d=$16,f3q=$17,f3d=$18,web=$19,webq=$20,ita=$21,fhq=$22,hora=$23,pres=$24,presentat=$25,resguard=$26,notes=$27,updated_at=NOW() WHERE id=$28 RETURNING updated_at`,
-    [s.g,s.emp,s.nova,s.cup,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
+    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,cont=$6,mob=$7,email=$8,url_web=$9,url_web_check=$10,reg=$11,sit=$12,tke=$13,f1q=$14,f1d=$15,f2q=$16,f2d=$17,f3q=$18,f3d=$19,web=$20,webq=$21,ita=$22,fhq=$23,hora=$24,pres=$25,presentat=$26,resguard=$27,notes=$28,updated_at=NOW() WHERE id=$29 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
   );
   d.updated_at=res.rows?.[0]?.updated_at;
 }
@@ -1084,14 +1085,14 @@ async function sbSetAdminPassword(name,password){
 }
 
 function rowToSb(d){
-  return {g:d.g,emp:d.emp,nova:d.nova,cup:d.cup,cont:d.cont,mob:d.mob,email:d.email,
+  return {g:d.g,emp:d.emp,nova:d.nova,cup:d.cup,cup_ant:d.cup_ant,cont:d.cont,mob:d.mob,email:d.email,
     url_web:d.url_web,url_web_check:d.url_web_check,
     reg:d.reg,sit:d.sit,tke:d.tke,f1q:d.f1q,f1d:d.f1d,f2q:d.f2q,f2d:d.f2d,
     f3q:d.f3q,f3d:d.f3d,web:d.web,webq:d.webq,ita:d.ita,fhq:d.fhq,hora:d.hora,
     pres:d.pres,presentat:d.presentat,resguard:d.resguard,notes:d.notes};
 }
 function sbToRow(r){
-  return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',
+  return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',cup_ant:r.cup_ant||'',
     cont:r.cont||'',mob:r.mob||'',email:r.email||'',
     url_web:r.url_web||'',url_web_check:r.url_web_check||'',reg:r.reg||'',
     sit:r.sit||'POTENCIAL',tke:r.tke||'',f1q:r.f1q||'',f1d:r.f1d||'',
@@ -1155,7 +1156,7 @@ async function init(){
 const _addRow=addRow;
 async function addRow(){
   if(!adminLevel){togglePanel('admin');return;} // demanar password si no autenticat
-  const nou={id:nid++,g:'',emp:'',nova:false,cup:'',cont:'',mob:'',email:'',url_web:'',url_web_check:'',
+  const nou={id:nid++,g:'',emp:'',nova:false,cup:'',cup_ant:'',cont:'',mob:'',email:'',url_web:'',url_web_check:'',
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
     web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:''};
   showSaving();
@@ -1208,6 +1209,7 @@ const _svs=svs;
 async function svs(id,f,v){
   const d=D.find(x=>x.id===id);
   if(!d)return;
+  if(f==='cup'&&v&&v===d.cup_ant){alert('El Cupó no pot coincidir amb el Cupó anterior.');render();return;}
   d[f]=v;
   if(f==='cup'){if(v==='IA'&&!d.ita)d.ita='DEMANAR';if(v!=='IA')d.ita='';}
   checkAutoComplete(d);calcTickets();

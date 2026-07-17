@@ -322,7 +322,7 @@ function render(){
 
   const hints={a:adminLevel==='master'?'Master autenticat — edició completa i gestió d\'admins.':adminLevel==='admin'?`Admin ${cU} — creació de registres i dades bàsiques.`:'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
     t:`Tramitador ${cU} — editeu les vostres fitxes i l'ITA.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`,
-    w:`Gestor Web ${cU} — editeu Web, URL web i URL web check.`,h:`Gestor Hora ${cU} — editeu la Validar Hora.`};
+    w:`Gestor Web ${cU} — editeu Web, URL web inicial i URL web final.`,h:`Gestor Hora ${cU} — editeu la Validar Hora.`};
   document.getElementById('hint-txt').textContent=hints[cT]||'';
 
   document.getElementById('btn-nova').style.display=cT==='a'?'inline-block':'none';

@@ -39,7 +39,7 @@ const ITA_COLORS={
 const WEB_COLORS={'NO':{bg:'#F4CCCC',fg:'#000'},'SBY':{bg:'#FFEB9C',fg:'#222'}};
 const OTORGAT_ESTAT={
   'SI':{label:'OTORGAT',bg:'#A02B93',fg:'#fff'},
-  'NO':{label:'REFUSAT',bg:'#A6A6A6',fg:'#fff'},
+  'NO':{label:'REFUSAT',bg:'#808080',fg:'#fff'},
   'REQUERIT':{label:'REQUERIT',bg:'#F2CEED',fg:'#000'},
 };
 const REQ_ESTAT_COLORS={
@@ -383,7 +383,7 @@ function render(){
     {l:'REGISTRES',n:total,bg:'#fff',fg:'#222'},
     {l:'COMPLETATS',n:cnt['COMPLETAT'],bg:'#00B050',fg:'#fff'},
     {l:'OTORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
-    {l:'REFUSATS',n:refusatsCount,bg:'#A6A6A6',fg:'#fff'},
+    {l:'REFUSATS',n:refusatsCount,bg:'#808080',fg:'#fff'},
     {l:'PENDENTS',n:pendentsCount,bg:'#fff',fg:'#222'},
     {l:'REQUERITS',n:requeritsCount,bg:'#F2CEED',fg:'#000'},
     {l:'PROCÉS',n:cnt['PROCÉS'],bg:'#DAF2D0',fg:'#222'},

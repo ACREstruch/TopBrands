@@ -301,8 +301,8 @@ function rowHtml(d,isMaster){
     <td class="ccon">${ec(d,'cont',d.cont)}</td>
     <td class="cmob">${ec(d,'mob',d.mob)}</td>
     <td class="ceml">${ovCell(d.email,ec(d,'email',d.email))}</td>
-    <td class="csit">${sitCell(d)}</td>
     <td class="creg">${ec(d,'reg',d.reg)}</td>
+    <td class="csit">${sitCell(d)}</td>
     <td class="ctke" style="text-align:center;color:#555">${isMaster&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
     <td class="cfq">${selFQ(d,1)}</td><td class="cfd">${ec(d,'f1d',d.f1d)}</td>
     <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
@@ -382,19 +382,20 @@ function render(){
   const pendentsCount=(cnt['COMPLETAT']||0)-otorgatsCount-refusatsCount;
   const rc=[
     {l:'REGISTRES',n:total,bg:'#fff',fg:'#222'},
-    {l:'COMPLETATS',n:cnt['COMPLETAT'],bg:'#00B050',fg:'#fff'},
-    {l:'OTORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
-    {l:'REFUSATS',n:refusatsCount,bg:'#808080',fg:'#fff'},
-    {l:'PENDENTS',n:pendentsCount,bg:'#fff',fg:'#222'},
-    {l:'REQUERITS',n:requeritsCount,bg:'#F2CEED',fg:'#000'},
     {l:'PROCÉS',n:cnt['PROCÉS'],bg:'#DAF2D0',fg:'#222'},
     {l:'POTENCIALS',n:cnt['POTENCIAL'],bg:'#fff',fg:'#222'},
     {l:'HO DESCARTA',n:cnt['HO DESCARTA'],bg:'#fff',fg:'#222'},
     {l:'FA COMPE',n:cnt['FA COMPE'],bg:'#fff',fg:'#222'},
     {l:'NO COMPLEIX',n:cnt['NO COMPLEIX'],bg:'#fff',fg:'#222'},
     {l:'NUL',n:cnt['NUL'],bg:'#fff',fg:'#222'},
+    {gap:true},
+    {l:'COMPLETATS',n:cnt['COMPLETAT'],bg:'#00B050',fg:'#fff'},
+    {l:'OTORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
+    {l:'REFUSATS',n:refusatsCount,bg:'#808080',fg:'#fff'},
+    {l:'PENDENTS',n:pendentsCount,bg:'#fff',fg:'#222'},
+    {l:'REQUERITS',n:requeritsCount,bg:'#F2CEED',fg:'#000'},
   ];
-  document.getElementById('recomptes').innerHTML=rc.map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+  document.getElementById('recomptes').innerHTML=rc.map(r=>r.gap?`<div style="width:18px"></div>`:`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
 
   const novesCount=D.filter(d=>d.nova).length;
   document.getElementById('recomptes-nova').innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesCount}</span><span class="rc-l">EMPRESES NOVES</span></div>`;

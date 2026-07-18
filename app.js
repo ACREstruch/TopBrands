@@ -890,6 +890,7 @@ async function svReq(el){
 async function svsReq(id,f,v){
   const r=REQ.find(x=>x.id===id); if(r)r[f]=v;
   await updateRequerimentField(id,f,v);
+  renderRequerimentsTable();
 }
 function selReqEstat(r){
   const c=REQ_ESTAT_COLORS[r.estat]||{};

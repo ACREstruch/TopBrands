@@ -17,7 +17,7 @@ let QW=[...T]; // Equip Web: genera el botó del rol Web
 let WEBLIST=['SI','NO','SBY','PROB'];
 let CUPS=['','CEXP','PI','EC','IA'];
 let SITS=['','COMPLETAT','PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'];
-const OTORGAT_OPTS=['','SI','NO'];
+const OTORGAT_OPTS=['','SI','NO','REQUERIT'];
 
 const SIT_COLORS={
   'COMPLETAT':  {bg:'#00B050',fg:'#fff'},
@@ -40,6 +40,7 @@ const WEB_COLORS={'NO':{bg:'#F4CCCC',fg:'#000'},'SBY':{bg:'#FFEB9C',fg:'#222'}};
 const OTORGAT_ESTAT={
   'SI':{label:'OTORGAT',bg:'#A02B93',fg:'#fff'},
   'NO':{label:'REFUSAT',bg:'#A6A6A6',fg:'#fff'},
+  'REQUERIT':{label:'REQUERIT',bg:'#F2CEED',fg:'#000'},
 };
 const REQ_ESTAT_COLORS={
   'PENDENT PRESENTACIÓ':{bg:'#FFD966',fg:'#3d2b00'},
@@ -376,11 +377,15 @@ function render(){
   const total=D.length;
   const otorgatsCount=D.filter(d=>d.otorgat==='SI').length;
   const refusatsCount=D.filter(d=>d.otorgat==='NO').length;
+  const requeritsCount=D.filter(d=>d.otorgat==='REQUERIT').length;
+  const pendentsCount=(cnt['COMPLETAT']||0)-otorgatsCount-refusatsCount;
   const rc=[
     {l:'REGISTRES',n:total,bg:'#fff',fg:'#222'},
     {l:'COMPLETATS',n:cnt['COMPLETAT'],bg:'#00B050',fg:'#fff'},
     {l:'OTORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
     {l:'REFUSATS',n:refusatsCount,bg:'#A6A6A6',fg:'#fff'},
+    {l:'PENDENTS',n:pendentsCount,bg:'#fff',fg:'#222'},
+    {l:'REQUERITS',n:requeritsCount,bg:'#F2CEED',fg:'#000'},
     {l:'PROCÉS',n:cnt['PROCÉS'],bg:'#DAF2D0',fg:'#222'},
     {l:'POTENCIALS',n:cnt['POTENCIAL'],bg:'#fff',fg:'#222'},
     {l:'HO DESCARTA',n:cnt['HO DESCARTA'],bg:'#fff',fg:'#222'},

@@ -17,6 +17,7 @@ let QW=[...T]; // Equip Web: genera el botó del rol Web
 let WEBLIST=['SI','NO','SBY','PROB'];
 let CUPS=['','CEXP','PI','EC','IA'];
 let SITS=['','COMPLETAT','PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'];
+const OTORGAT_OPTS=['','SI','NO'];
 
 const SIT_COLORS={
   'COMPLETAT':  {bg:'#00B050',fg:'#fff'},
@@ -36,6 +37,10 @@ const ITA_COLORS={
   'REBUT':    {bg:'#DAF2D0',fg:'#222'},
 };
 const WEB_COLORS={'NO':{bg:'#F4CCCC',fg:'#000'},'SBY':{bg:'#FFEB9C',fg:'#222'}};
+const OTORGAT_ESTAT={
+  'SI':{label:'OTORGAT',bg:'#A02B93',fg:'#fff'},
+  'NO':{label:'REFUSAT',bg:'#A6A6A6',fg:'#fff'},
+};
 const REQ_ESTAT_COLORS={
   'PENDENT PRESENTACIÓ':{bg:'#FFD966',fg:'#3d2b00'},
   'PRESENTAT':          {bg:'#8FD19E',fg:'#163d1f'},
@@ -229,9 +234,10 @@ function selWebQ(d){
   return `<select onchange="svs(${d.id},'webq',this.value)"><option value=""></option>${QW.map(x=>`<option${d.webq===x?' selected':''}>${x}</option>`).join('')}</select>`;
 }
 function sitCell(d){
-  const sc=SIT_COLORS[d.sit]||{};
+  const forced=OTORGAT_ESTAT[d.otorgat];
+  const sc=forced||SIT_COLORS[d.sit]||{};
   const bg=sc.bg||'',fg=sc.fg||'#222';
-  const label=d.sit||'';
+  const label=forced?forced.label:(d.sit||'');
   const canEditSit=(cT==='a'&&adminLevel==='master')||(cT==='t'&&d.sit!=='COMPLETAT');
   if(!canEditSit)return `<div style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
   const opts=(cT==='t'?SITS.filter(s=>s&&s!=='COMPLETAT'&&s!=='PROCÉS'):SITS.filter(s=>s))
@@ -290,6 +296,7 @@ function rowHtml(d,isMaster){
     <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${(cT==='a'&&adminLevel)?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
     <td class="ccupant">${sel(d,'cup_ant',CUPS,d.cup_ant)}</td>
     <td class="ccup">${sel(d,'cup',CUPS,d.cup)}</td>
+    <td class="cotor">${sel(d,'otorgat',OTORGAT_OPTS,d.otorgat)}</td>
     <td class="ccon">${ec(d,'cont',d.cont)}</td>
     <td class="cmob">${ec(d,'mob',d.mob)}</td>
     <td class="ceml">${ovCell(d.email,ec(d,'email',d.email))}</td>
@@ -1039,8 +1046,8 @@ async function sbGet(){
 async function sbInsert(d){
   const s=rowToSb(d);
   const res=await neonQuery(
-    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING *`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
+    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
   );
   return res.rows?.[0];
 }
@@ -1061,8 +1068,8 @@ async function sbUpdate(id,d){
     }
   }
   const res=await neonQuery(
-    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,cont=$6,mob=$7,email=$8,url_web=$9,url_web_check=$10,reg=$11,sit=$12,tke=$13,f1q=$14,f1d=$15,f2q=$16,f2d=$17,f3q=$18,f3d=$19,web=$20,webq=$21,ita=$22,fhq=$23,hora=$24,pres=$25,presentat=$26,resguard=$27,notes=$28,updated_at=NOW() WHERE id=$29 RETURNING updated_at`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
+    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,updated_at=NOW() WHERE id=$30 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
   );
   d.updated_at=res.rows?.[0]?.updated_at;
 }
@@ -1085,14 +1092,14 @@ async function sbSetAdminPassword(name,password){
 }
 
 function rowToSb(d){
-  return {g:d.g,emp:d.emp,nova:d.nova,cup:d.cup,cup_ant:d.cup_ant,cont:d.cont,mob:d.mob,email:d.email,
+  return {g:d.g,emp:d.emp,nova:d.nova,cup:d.cup,cup_ant:d.cup_ant,otorgat:d.otorgat,cont:d.cont,mob:d.mob,email:d.email,
     url_web:d.url_web,url_web_check:d.url_web_check,
     reg:d.reg,sit:d.sit,tke:d.tke,f1q:d.f1q,f1d:d.f1d,f2q:d.f2q,f2d:d.f2d,
     f3q:d.f3q,f3d:d.f3d,web:d.web,webq:d.webq,ita:d.ita,fhq:d.fhq,hora:d.hora,
     pres:d.pres,presentat:d.presentat,resguard:d.resguard,notes:d.notes};
 }
 function sbToRow(r){
-  return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',cup_ant:r.cup_ant||'',
+  return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',cup_ant:r.cup_ant||'',otorgat:r.otorgat||'',
     cont:r.cont||'',mob:r.mob||'',email:r.email||'',
     url_web:r.url_web||'',url_web_check:r.url_web_check||'',reg:r.reg||'',
     sit:r.sit||'POTENCIAL',tke:r.tke||'',f1q:r.f1q||'',f1d:r.f1d||'',
@@ -1156,7 +1163,7 @@ async function init(){
 const _addRow=addRow;
 async function addRow(){
   if(!adminLevel){togglePanel('admin');return;} // demanar password si no autenticat
-  const nou={id:nid++,g:'',emp:'',nova:false,cup:'',cup_ant:'',cont:'',mob:'',email:'',url_web:'',url_web_check:'',
+  const nou={id:nid++,g:'',emp:'',nova:false,cup:'',cup_ant:'',otorgat:'',cont:'',mob:'',email:'',url_web:'',url_web_check:'',
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
     web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:''};
   showSaving();

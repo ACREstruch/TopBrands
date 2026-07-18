@@ -374,9 +374,13 @@ function render(){
   SITS.filter(s=>s).forEach(s=>cnt[s]=0);
   D.forEach(d=>{if(cnt[d.sit]!==undefined)cnt[d.sit]++;});
   const total=D.length;
+  const otorgatsCount=D.filter(d=>d.otorgat==='SI').length;
+  const refusatsCount=D.filter(d=>d.otorgat==='NO').length;
   const rc=[
     {l:'REGISTRES',n:total,bg:'#fff',fg:'#222'},
     {l:'COMPLETATS',n:cnt['COMPLETAT'],bg:'#00B050',fg:'#fff'},
+    {l:'OTORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
+    {l:'REFUSATS',n:refusatsCount,bg:'#A6A6A6',fg:'#fff'},
     {l:'PROCÉS',n:cnt['PROCÉS'],bg:'#DAF2D0',fg:'#222'},
     {l:'POTENCIALS',n:cnt['POTENCIAL'],bg:'#fff',fg:'#222'},
     {l:'HO DESCARTA',n:cnt['HO DESCARTA'],bg:'#fff',fg:'#222'},
@@ -452,11 +456,11 @@ function adjustTableHeight(){
 }
 function updateStickyOffsets(){
   const ths=document.querySelectorAll('thead tr:first-child th');
-  if(ths.length<6)return;
+  if(ths.length<7)return;
   const root=document.documentElement.style;
   let sum=0;
   root.setProperty('--stick1','0px');
-  for(let i=0;i<5;i++){
+  for(let i=0;i<6;i++){
     sum+=ths[i].offsetWidth;
     root.setProperty('--stick'+(i+2),sum+'px');
   }

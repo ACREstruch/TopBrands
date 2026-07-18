@@ -901,6 +901,11 @@ function selReqEstat(r){
   const opts=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','No aplica'];
   return `<select${style} onchange="svsReq(${r.id},'estat',this.value)">${opts.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'N/A'}</option>`).join('')}</select>`;
 }
+function reqTodoCell(r){
+  const master=isMasterActive();
+  const bg=r.todo?'background:#FF3333;':'';
+  return `<td style="text-align:center;${bg}"><input type="checkbox"${r.todo?' checked':''}${master?'':' disabled'} onchange="svsReq(${r.id},'todo',this.checked)"></td>`;
+}
 function tipusBadges(r){
   const ids=parseTipusIds(r.tipus_ids);
   const names=ids.map(tid=>{const t=REQ_TIPUS.find(x=>x.id===tid);return t?t.alies.split(',')[0]:'';}).filter(Boolean);
@@ -980,6 +985,7 @@ function reqRowHtml(r){
     <td class="ncell">${ecReq(r,'comentaris_backoffice',r.comentaris_backoffice,true)}</td>
     <td>${ecReq(r,'dead_line',r.dead_line)}</td>
     <td>${selReqEstat(r)}</td>
+    ${reqTodoCell(r)}
     <td>${ecReq(r,'data_presentacio',r.data_presentacio)}</td>
     <td class="ncell">${ecReq(r,'comentaris_kam',r.comentaris_kam,true)}</td>
     <td class="ncell">${ecReq(r,'kickoff_esperat',r.kickoff_esperat,true)}</td>

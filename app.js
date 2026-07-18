@@ -431,7 +431,7 @@ function render(){
 
   // Ajust top de la 2a fila de capçalera
   requestAnimationFrame(()=>{
-    const rows=document.querySelectorAll('thead tr');
+    const rows=document.querySelectorAll('#table-wrap thead tr');
     if(rows[0]){
       const h1=rows[0].offsetHeight;
       if(rows[1])rows[1].querySelectorAll('th').forEach(th=>th.style.top=h1+'px');
@@ -462,7 +462,7 @@ function adjustTableHeight(){
   wrap.style.maxHeight=Math.max(200,avail)+'px';
 }
 function updateStickyOffsets(){
-  const ths=document.querySelectorAll('thead tr:first-child th');
+  const ths=document.querySelectorAll('#table-wrap thead tr:first-child th');
   if(ths.length<7)return;
   const root=document.documentElement.style;
   let sum=0;
@@ -472,7 +472,18 @@ function updateStickyOffsets(){
     root.setProperty('--stick'+(i+2),sum+'px');
   }
 }
-function adjustLayout(){adjustTableHeight();updateStickyOffsets();}
+function updateReqStickyOffsets(){
+  const ths=document.querySelectorAll('#req-table-wrap thead th');
+  if(ths.length<5)return;
+  const root=document.documentElement.style;
+  let sum=0;
+  root.setProperty('--rstick1','0px');
+  for(let i=0;i<4;i++){
+    sum+=ths[i].offsetWidth;
+    root.setProperty('--rstick'+(i+2),sum+'px');
+  }
+}
+function adjustLayout(){adjustTableHeight();updateStickyOffsets();updateReqStickyOffsets();}
 window.addEventListener('resize',adjustLayout);
 if(window.ResizeObserver){
   const headerObs=new ResizeObserver(()=>adjustLayout());
@@ -881,11 +892,14 @@ function ecReq(r,f,v,multi){
   if(!isMasterActive())return `<span>${v||''}</span>`;
   return `<span class="ed" contenteditable="true" data-rid="${r.id}" data-rf="${f}" onblur="svReq(this)" onkeydown="if(event.key==='Enter'&&!${!!multi}){event.preventDefault();this.blur()}">${v||''}</span>`;
 }
+const REQ_DATE_FIELDS=['dead_line','data_presentacio','data_proposta_presentada','data_proposta_enviada','data_resolucio'];
 async function svReq(el){
   const id=+el.dataset.rid, f=el.dataset.rf;
-  const v=el.textContent.trim();
+  let v=el.textContent.trim();
+  if(REQ_DATE_FIELDS.includes(f))v=fmtDate(v).replace(/\./g,'/');
   const r=REQ.find(x=>x.id===id); if(r)r[f]=v;
   await updateRequerimentField(id,f,v);
+  renderRequerimentsTable();
 }
 async function svsReq(id,f,v){
   const r=REQ.find(x=>x.id===id); if(r)r[f]=v;
@@ -983,22 +997,23 @@ function reqRowHtml(r){
     <td>${tipusBadges(r)}</td>
     <td class="ncell">${ecReq(r,'aclariment_tecnic',r.aclariment_tecnic,true)}</td>
     <td class="ncell">${ecReq(r,'comentaris_backoffice',r.comentaris_backoffice,true)}</td>
-    <td>${ecReq(r,'dead_line',r.dead_line)}</td>
+    <td class="rq-date">${ecReq(r,'dead_line',r.dead_line)}</td>
     <td>${selReqEstat(r)}</td>
     ${reqTodoCell(r)}
-    <td>${ecReq(r,'data_presentacio',r.data_presentacio)}</td>
+    <td class="rq-date">${ecReq(r,'data_presentacio',r.data_presentacio)}</td>
     <td class="ncell">${ecReq(r,'comentaris_kam',r.comentaris_kam,true)}</td>
     <td class="ncell">${ecReq(r,'kickoff_esperat',r.kickoff_esperat,true)}</td>
     <td>${ecReq(r,'proposta_presentada',r.proposta_presentada)}</td>
-    <td>${ecReq(r,'data_proposta_presentada',r.data_proposta_presentada)}</td>
+    <td class="rq-date">${ecReq(r,'data_proposta_presentada',r.data_proposta_presentada)}</td>
     <td>${ecReq(r,'proposta_enviada',r.proposta_enviada)}</td>
-    <td>${ecReq(r,'data_proposta_enviada',r.data_proposta_enviada)}</td>
+    <td class="rq-date">${ecReq(r,'data_proposta_enviada',r.data_proposta_enviada)}</td>
     <td>${ecReq(r,'resolucio_final',r.resolucio_final)}</td>
-    <td>${ecReq(r,'data_resolucio',r.data_resolucio)}</td>
+    <td class="rq-date">${ecReq(r,'data_resolucio',r.data_resolucio)}</td>
   </tr>`;
 }
 function renderRequerimentsTable(){
   document.getElementById('req-tbody').innerHTML=REQ.map(r=>reqRowHtml(r)).join('');
+  requestAnimationFrame(updateReqStickyOffsets);
 }
 async function renderRequeriments(){
   const master=isMasterActive();

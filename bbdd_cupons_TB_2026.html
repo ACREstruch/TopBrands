@@ -262,6 +262,14 @@ td.cotor, thead tr:first-child th:nth-child(7){box-shadow:inset -3px 0 0 #E8622A
             <option value="">Totes</option>
           </select>
         </div>
+        <div class="fi"><label>Otorgat</label>
+          <select id="fOtorSel" onchange="fOtor=this.value;render()">
+            <option value="">Tots</option>
+            <option value="SI">SI (OTORGAT)</option>
+            <option value="NO">NO (REFUSAT)</option>
+            <option value="REQUERIT">REQUERIT</option>
+          </select>
+        </div>
         <div class="fi"><label>Cerca</label>
           <input type="text" id="fQ" placeholder="empresa, contacte…" oninput="fQ=this.value;render()">
           <button onclick="document.getElementById('fQ').value='';fQ='';render()" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold;padding:0 4px;line-height:1" title="Netejar">×</button>

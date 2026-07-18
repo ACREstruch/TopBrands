@@ -52,7 +52,7 @@ const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padS
 let D=[];
 let nid=1;
 let cU='Admin', cT='a';
-let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
+let fCup='', fSit='', fOtor='', fQ='', fWeb=false, fHora=false, fNova=false;
 let notesExpanded=new Set();
 let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
 let REQ=[]; // requeriments carregats
@@ -359,6 +359,7 @@ function render(){
     if(fNova&&!d.nova)return false;
     if(fCup&&d.cup!==fCup)return false;
     if(fSit&&d.sit!==fSit)return false;
+    if(fOtor&&d.otorgat!==fOtor)return false;
     if(fQ){const q=fQ.toLowerCase();if(!d.emp.toLowerCase().includes(q)&&!d.cont.toLowerCase().includes(q))return false;}
     return true;
   });

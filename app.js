@@ -843,7 +843,7 @@ async function setPin(name,pin){
 ═══════════════════════════════════════════════ */
 const REQ_FIELDS=['expedient','tipus_ids','aclariment_tecnic','comentaris_backoffice','dead_line','estat',
   'data_presentacio','comentaris_kam','kickoff_esperat','proposta_presentada','data_proposta_presentada',
-  'proposta_enviada','data_proposta_enviada','resolucio_final','data_resolucio'];
+  'proposta_enviada','data_proposta_enviada','resolucio_final','data_resolucio','todo'];
 const TIPUS_FIELDS=['alies','pregunta','comentari','recurs_nom','recurs_link'];
 
 function isMasterActive(){return cT==='a'&&adminLevel==='master';}

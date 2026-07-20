@@ -54,6 +54,7 @@ let nid=1;
 let cU='Admin', cT='a';
 let fCup='', fSit='', fOtor='', fQ='', fWeb=false, fHora=false, fNova=false;
 let notesExpanded=new Set();
+let reqNotesExpanded=new Set();
 let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
 let REQ=[]; // requeriments carregats
 let REQ_TIPUS=[]; // catàleg de tipus de requeriment
@@ -437,19 +438,7 @@ function render(){
       if(rows[1])rows[1].querySelectorAll('th').forEach(th=>th.style.top=h1+'px');
       if(rows[2])rows[2].querySelectorAll('th').forEach(th=>th.style.top=(h1+(rows[1]?rows[1].offsetHeight:0))+'px');
     }
-    document.querySelectorAll('.notes-wrap').forEach(w=>{
-      const ed=w.querySelector('span');
-      const btn=w.querySelector('.notes-toggle');
-      if(!ed||!btn)return;
-      if(w.classList.contains('expanded')){
-        btn.textContent='−';
-        btn.style.display='inline-block';
-      } else {
-        const overflow=ed.scrollHeight>ed.clientHeight+1;
-        btn.textContent='+';
-        btn.style.display=overflow?'inline-block':'none';
-      }
-    });
+    updateNotesToggles('#table-wrap');
     adjustTableHeight();
     updateStickyOffsets();
   });
@@ -499,6 +488,28 @@ function toggleNotes(btn){
   const isExp=wrap.classList.toggle('expanded');
   if(isExp)notesExpanded.add(id);else notesExpanded.delete(id);
   btn.textContent=isExp?'−':'+';
+}
+function toggleReqNotes(btn){
+  const wrap=btn.parentElement;
+  const key=wrap.dataset.rid+':'+wrap.dataset.rf;
+  const isExp=wrap.classList.toggle('expanded');
+  if(isExp)reqNotesExpanded.add(key);else reqNotesExpanded.delete(key);
+  btn.textContent=isExp?'−':'+';
+}
+function updateNotesToggles(scope){
+  document.querySelectorAll(scope+' .notes-wrap').forEach(w=>{
+    const content=w.firstElementChild;
+    const btn=w.querySelector('.notes-toggle');
+    if(!content||!btn)return;
+    if(w.classList.contains('expanded')){
+      btn.textContent='−';
+      btn.style.display='inline-block';
+    } else {
+      const overflow=content.scrollHeight>content.clientHeight+1;
+      btn.textContent='+';
+      btn.style.display=overflow?'inline-block':'none';
+    }
+  });
 }
 
 /* ═══════════════════════════════════════════════
@@ -920,6 +931,11 @@ function reqTodoCell(r){
   const bg=r.todo?'background:#FF3333;':'';
   return `<td style="text-align:center;${bg}"><input type="checkbox"${r.todo?' checked':''}${master?'':' disabled'} onchange="svsReq(${r.id},'todo',this.checked)"></td>`;
 }
+function reqWideCell(r,f,innerHtml){
+  const key=r.id+':'+f;
+  const exp=reqNotesExpanded.has(key)?' expanded':'';
+  return `<td class="rq-wide"><div class="notes-wrap${exp}" data-rid="${r.id}" data-rf="${f}">${innerHtml}<button type="button" class="notes-toggle" onclick="toggleReqNotes(this)">+</button></div></td>`;
+}
 function tipusBadges(r){
   const ids=parseTipusIds(r.tipus_ids);
   const names=ids.map(tid=>{const t=REQ_TIPUS.find(x=>x.id===tid);return t?t.alies.split(',')[0]:'';}).filter(Boolean);
@@ -994,16 +1010,16 @@ function reqRowHtml(r){
     <td style="text-align:center">${r.c_tke||''}</td>
     <td style="text-align:center">${r.c_cup||''}</td>
     <td>${ecReq(r,'expedient',r.expedient)}</td>
-    <td>${tipusBadges(r)}</td>
-    <td class="ncell">${ecReq(r,'aclariment_tecnic',r.aclariment_tecnic,true)}</td>
-    <td class="ncell">${ecReq(r,'comentaris_backoffice',r.comentaris_backoffice,true)}</td>
+    ${reqWideCell(r,'tipus',tipusBadges(r))}
+    ${reqWideCell(r,'aclariment_tecnic',ecReq(r,'aclariment_tecnic',r.aclariment_tecnic,true))}
+    ${reqWideCell(r,'comentaris_backoffice',ecReq(r,'comentaris_backoffice',r.comentaris_backoffice,true))}
     <td class="rq-date">${ecReq(r,'dead_line',r.dead_line)}</td>
     <td>${selReqEstat(r)}</td>
     ${reqTodoCell(r)}
     <td class="rq-date">${ecReq(r,'data_presentacio',r.data_presentacio)}</td>
-    <td class="ncell">${ecReq(r,'comentaris_kam',r.comentaris_kam,true)}</td>
-    <td class="ncell">${ecReq(r,'kickoff_esperat',r.kickoff_esperat,true)}</td>
-    <td>${ecReq(r,'proposta_presentada',r.proposta_presentada)}</td>
+    ${reqWideCell(r,'comentaris_kam',ecReq(r,'comentaris_kam',r.comentaris_kam,true))}
+    ${reqWideCell(r,'kickoff_esperat',ecReq(r,'kickoff_esperat',r.kickoff_esperat,true))}
+    ${reqWideCell(r,'proposta_presentada',ecReq(r,'proposta_presentada',r.proposta_presentada,true))}
     <td class="rq-date">${ecReq(r,'data_proposta_presentada',r.data_proposta_presentada)}</td>
     <td>${ecReq(r,'proposta_enviada',r.proposta_enviada)}</td>
     <td class="rq-date">${ecReq(r,'data_proposta_enviada',r.data_proposta_enviada)}</td>
@@ -1013,7 +1029,10 @@ function reqRowHtml(r){
 }
 function renderRequerimentsTable(){
   document.getElementById('req-tbody').innerHTML=REQ.map(r=>reqRowHtml(r)).join('');
-  requestAnimationFrame(updateReqStickyOffsets);
+  requestAnimationFrame(()=>{
+    updateReqStickyOffsets();
+    updateNotesToggles('#req-table-wrap');
+  });
 }
 async function renderRequeriments(){
   const master=isMasterActive();

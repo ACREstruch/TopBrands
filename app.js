@@ -321,6 +321,39 @@ function rowHtml(d,isMaster){
     <td class="ncell cnot"><div class="notes-wrap${notesExpanded.has(d.id)?' expanded':''}" data-id="${d.id}">${ec(d,'notes',d.notes,true)}<button type="button" class="notes-toggle" onclick="toggleNotes(this)">+</button></div></td>
   </tr>`;
 }
+/* ═══════════════════════════════════════════════
+   5b. PESTANYA COMERCIAL
+═══════════════════════════════════════════════ */
+function comCheckColorCell(d,f,colorObj){
+  const bg=d[f]?colorObj.bg:'',fg=d[f]?colorObj.fg:'#222';
+  const canEdit=cT==='a'&&adminLevel;
+  return `<td class="com-check" style="background:${bg};color:${fg}"><input type="checkbox"${d[f]?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'${f}',this.checked)"></td>`;
+}
+function comCheckCell(d,f){
+  const canEdit=cT==='a'&&adminLevel;
+  return `<td class="com-check"><input type="checkbox"${d[f]?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'${f}',this.checked)"></td>`;
+}
+function comRowHtml(d){
+  return `<tr>
+    <td class="cg">${d.g||''}</td>
+    <td class="cemp">${d.emp||''}</td>
+    <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''} disabled></td>
+    <td class="ccup">${d.cup||''}</td>
+    ${comCheckColorCell(d,'proc_comercial_previ',OTORGAT_ESTAT.SI)}
+    ${comCheckColorCell(d,'te_requeriment',OTORGAT_ESTAT.REQUERIT)}
+    <td class="com-date">${ec(d,'primer_contacte',d.primer_contacte)}</td>
+    <td class="com-date">${ec(d,'proposta_presentada',d.proposta_presentada)}</td>
+    <td class="com-date">${ec(d,'proposta_enviada',d.proposta_enviada)}</td>
+    ${comCheckCell(d,'oferta_acceptada')}
+    <td class="com-date">${ec(d,'kickoff_esperat',d.kickoff_esperat)}</td>
+  </tr>`;
+}
+function renderComercial(){
+  const rows=D.filter(d=>d.presentat).sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
+  const tbody=document.getElementById('com-tbody');
+  if(tbody)tbody.innerHTML=rows.map(comRowHtml).join('');
+}
+
 function toggleGroup(sit){
   if(collapsedGroups.has(sit))collapsedGroups.delete(sit);else collapsedGroups.add(sit);
   render();
@@ -429,6 +462,7 @@ function render(){
     if(!collapsed)tbodyHtml+=groupRows.map(d=>rowHtml(d,isMaster)).join('');
   });
   document.getElementById('tbody').innerHTML=tbodyHtml;
+  renderComercial();
 
   // Ajust top de la 2a fila de capçalera
   requestAnimationFrame(()=>{
@@ -533,9 +567,10 @@ document.addEventListener('click',()=>document.querySelectorAll('.sit-drop.open,
    7. PESTANYES
 ═══════════════════════════════════════════════ */
 function showTab(id){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','sch-tickets','sch-cupo','requeriments','tipus'][i]===id));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','comercial','sch-tickets','sch-cupo','requeriments','tipus'][i]===id));
   document.querySelectorAll('.tab-content').forEach(d=>d.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
+  if(id==='comercial')renderComercial();
   if(id==='sch-tickets')renderSchTickets();
   if(id==='sch-cupo')renderSchCupo();
   if(id==='requeriments')renderRequeriments();
@@ -853,8 +888,7 @@ async function setPin(name,pin){
    15. REQUERIMENTS (seguiment post-presentació)
 ═══════════════════════════════════════════════ */
 const REQ_FIELDS=['expedient','tipus_ids','aclariment_tecnic','comentaris_backoffice','dead_line','estat',
-  'data_presentacio','comentaris_kam','kickoff_esperat','proposta_presentada','data_proposta_presentada',
-  'proposta_enviada','data_proposta_enviada','resolucio_final','data_resolucio','todo'];
+  'data_presentacio','comentaris_kam','resolucio_final','data_resolucio','todo'];
 const TIPUS_FIELDS=['alies','pregunta','comentari','recurs_nom','recurs_link'];
 
 function isMasterActive(){return cT==='a'&&adminLevel==='master';}
@@ -903,7 +937,7 @@ function ecReq(r,f,v,multi){
   if(!isMasterActive())return `<span>${v||''}</span>`;
   return `<span class="ed" contenteditable="true" data-rid="${r.id}" data-rf="${f}" onblur="svReq(this)" onkeydown="if(event.key==='Enter'&&!${!!multi}){event.preventDefault();this.blur()}">${v||''}</span>`;
 }
-const REQ_DATE_FIELDS=['dead_line','data_presentacio','data_proposta_presentada','data_proposta_enviada','data_resolucio'];
+const REQ_DATE_FIELDS=['dead_line','data_presentacio','data_resolucio'];
 async function svReq(el){
   const id=+el.dataset.rid, f=el.dataset.rf;
   let v=el.textContent.trim();
@@ -994,6 +1028,12 @@ async function confirmNouReq(){
   const cupoId=+sel.value;
   document.getElementById('nou-req-dialog').remove();
   await insertRequerimentRow(cupoId);
+  const d=D.find(x=>x.id===cupoId);
+  if(d&&!d.te_requeriment){
+    d.te_requeriment=true;
+    try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut marcar Requeriment a Comercial:',e);}
+    renderComercial();
+  }
   renderRequeriments();
 }
 async function delRequerimentRow(id){
@@ -1018,11 +1058,6 @@ function reqRowHtml(r){
     ${reqTodoCell(r)}
     <td class="rq-date">${ecReq(r,'data_presentacio',r.data_presentacio)}</td>
     ${reqWideCell(r,'comentaris_kam',ecReq(r,'comentaris_kam',r.comentaris_kam,true))}
-    ${reqWideCell(r,'kickoff_esperat',ecReq(r,'kickoff_esperat',r.kickoff_esperat,true))}
-    ${reqWideCell(r,'proposta_presentada',ecReq(r,'proposta_presentada',r.proposta_presentada,true))}
-    <td class="rq-date">${ecReq(r,'data_proposta_presentada',r.data_proposta_presentada)}</td>
-    <td>${ecReq(r,'proposta_enviada',r.proposta_enviada)}</td>
-    <td class="rq-date">${ecReq(r,'data_proposta_enviada',r.data_proposta_enviada)}</td>
     <td>${ecReq(r,'resolucio_final',r.resolucio_final)}</td>
     <td class="rq-date">${ecReq(r,'data_resolucio',r.data_resolucio)}</td>
   </tr>`;
@@ -1098,8 +1133,8 @@ async function sbGet(){
 async function sbInsert(d){
   const s=rowToSb(d);
   const res=await neonQuery(
-    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29) RETURNING *`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes]
+    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat]
   );
   return res.rows?.[0];
 }
@@ -1120,8 +1155,8 @@ async function sbUpdate(id,d){
     }
   }
   const res=await neonQuery(
-    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,updated_at=NOW() WHERE id=$30 RETURNING updated_at`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,id]
+    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,updated_at=NOW() WHERE id=$37 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,id]
   );
   d.updated_at=res.rows?.[0]?.updated_at;
 }
@@ -1148,7 +1183,10 @@ function rowToSb(d){
     url_web:d.url_web,url_web_check:d.url_web_check,
     reg:d.reg,sit:d.sit,tke:d.tke,f1q:d.f1q,f1d:d.f1d,f2q:d.f2q,f2d:d.f2d,
     f3q:d.f3q,f3d:d.f3d,web:d.web,webq:d.webq,ita:d.ita,fhq:d.fhq,hora:d.hora,
-    pres:d.pres,presentat:d.presentat,resguard:d.resguard,notes:d.notes};
+    pres:d.pres,presentat:d.presentat,resguard:d.resguard,notes:d.notes,
+    proc_comercial_previ:d.proc_comercial_previ,te_requeriment:d.te_requeriment,primer_contacte:d.primer_contacte,
+    proposta_presentada:d.proposta_presentada,proposta_enviada:d.proposta_enviada,
+    oferta_acceptada:d.oferta_acceptada,kickoff_esperat:d.kickoff_esperat};
 }
 function sbToRow(r){
   return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',cup_ant:r.cup_ant||'',otorgat:r.otorgat||'',
@@ -1157,7 +1195,10 @@ function sbToRow(r){
     sit:r.sit||'POTENCIAL',tke:r.tke||'',f1q:r.f1q||'',f1d:r.f1d||'',
     f2q:r.f2q||'',f2d:r.f2d||'',f3q:r.f3q||'',f3d:r.f3d||'',web:r.web||'',webq:r.webq||'',
     ita:r.ita||'',fhq:r.fhq||'',hora:r.hora||'',pres:r.pres||'',
-    presentat:!!r.presentat,resguard:!!r.resguard,notes:r.notes||'',updated_at:r.updated_at||null};
+    presentat:!!r.presentat,resguard:!!r.resguard,notes:r.notes||'',updated_at:r.updated_at||null,
+    proc_comercial_previ:!!r.proc_comercial_previ,te_requeriment:!!r.te_requeriment,primer_contacte:r.primer_contacte||'',
+    proposta_presentada:r.proposta_presentada||'',proposta_enviada:r.proposta_enviada||'',
+    oferta_acceptada:!!r.oferta_acceptada,kickoff_esperat:r.kickoff_esperat||''};
 }
 
 // Indicador de guardat
@@ -1217,7 +1258,9 @@ async function addRow(){
   if(!adminLevel){togglePanel('admin');return;} // demanar password si no autenticat
   const nou={id:nid++,g:'',emp:'',nova:false,cup:'',cup_ant:'',otorgat:'',cont:'',mob:'',email:'',url_web:'',url_web_check:'',
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
-    web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:''};
+    web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:'',
+    proc_comercial_previ:false,te_requeriment:false,primer_contacte:'',proposta_presentada:'',
+    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:''};
   showSaving();
   try{
     const saved=await sbInsert(nou);
@@ -1256,6 +1299,8 @@ async function sv(el){
     v=fmtDate(v);
   } else if(f==='hora'){
     v=fmtHora(v);
+  } else if(['primer_contacte','proposta_presentada','proposta_enviada','kickoff_esperat'].includes(f)){
+    v=fmtDate(v).replace(/\./g,'/');
   }
   d[f]=v;checkAutoComplete(d);calcTickets();
   showSaving();

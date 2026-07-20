@@ -131,6 +131,14 @@ thead tr:nth-child(2) th{top:28px;}
 .ccup{width:68px;min-width:68px;max-width:68px;}
 .cotor{width:90px;min-width:90px;max-width:90px;}
 .rq-date{width:60px;min-width:60px;max-width:60px;}
+
+/* Taula Comercial */
+#com-table-wrap .cg{width:52px;min-width:52px;max-width:52px;}
+#com-table-wrap .cemp{width:195px;min-width:195px;max-width:195px;text-transform:uppercase;}
+#com-table-wrap .cnov{width:36px;min-width:36px;max-width:36px;}
+#com-table-wrap .ccup{width:68px;min-width:68px;max-width:68px;}
+.com-check{width:80px;min-width:80px;max-width:80px;text-align:center;}
+.com-date{width:70px;min-width:70px;max-width:70px;}
 .cotor select{width:100%;}
 .ccon{width:143px;min-width:143px;max-width:143px;}
 .cmob{width:82px;min-width:82px;max-width:82px;}
@@ -229,6 +237,7 @@ thead tr:nth-child(2) th{top:28px;}
 <!-- ═══════════════ PESTANYES ═══════════════ -->
 <div class="tabs">
   <button class="tab-btn active" onclick="showTab('bbdd')">📋 BBDD</button>
+  <button class="tab-btn" onclick="showTab('comercial')">💼 Comercial</button>
   <button class="tab-btn" onclick="showTab('sch-tickets')">🕐 Schedule — Tickets</button>
   <button class="tab-btn" onclick="showTab('sch-cupo')">🏷️ Schedule — Cupó</button>
   <button class="tab-btn" onclick="showTab('requeriments')">📄 Requeriments</button>
@@ -390,6 +399,31 @@ thead tr:nth-child(2) th{top:28px;}
 
 </div><!-- fi tab-bbdd -->
 
+<!-- ═══════════════ TAB COMERCIAL ═══════════════ -->
+<div id="tab-comercial" class="tab-content">
+  <div class="hint" id="com-hint">Empreses amb 'Presentat' marcat a BBDD — ordenades per Ticket.</div>
+  <div class="table-wrap" id="com-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>KAM</th>
+          <th>Empresa</th>
+          <th>Nova</th>
+          <th>Cupó</th>
+          <th>Procés<br>comercial<br>previ</th>
+          <th>Requeriment</th>
+          <th>Primer<br>contacte</th>
+          <th>Proposta<br>presentada</th>
+          <th>Proposta<br>enviada</th>
+          <th>Acceptada</th>
+          <th>Kick-off</th>
+        </tr>
+      </thead>
+      <tbody id="com-tbody"></tbody>
+    </table>
+  </div>
+</div><!-- fi tab-comercial -->
+
 <!-- ═══════════════ TAB SCHEDULE TICKETS ═══════════════ -->
 <div id="tab-sch-tickets" class="tab-content">
   <div class="sch-wrap">
@@ -437,11 +471,6 @@ thead tr:nth-child(2) th{top:28px;}
           <th>TODO</th>
           <th>Data<br>presentació</th>
           <th>Comentaris KAM</th>
-          <th>Kick-off esperat</th>
-          <th>Proposta presentada</th>
-          <th>Data</th>
-          <th>Proposta enviada</th>
-          <th>Data</th>
           <th>Resolució final</th>
           <th>Data<br>resolució</th>
         </tr>

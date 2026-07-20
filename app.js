@@ -1372,8 +1372,9 @@ init();
 
 // ── POLLING: actualitza dades cada 5 segons ──
 setInterval(async()=>{
-  // No actualitzar si l'usuari està editant activament
+  // No actualitzar si l'usuari està editant activament o té un desplegable obert
   if(document.activeElement&&document.activeElement.classList.contains('ed'))return;
+  if(document.querySelector('.sit-drop.open,.ita-drop.open'))return;
   try{
     const rows=await sbGet();
     const nouD=rows.map(sbToRow);

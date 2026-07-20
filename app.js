@@ -117,7 +117,8 @@ function checkAutoComplete(d){
   const f2ok=d.f2q&&isValidDate(d.f2d);
   const f3ok=d.f3q&&isValidDate(d.f3d);
   const itaOk=d.cup!=='IA'||d.ita==='REBUT';
-  const allDone=f1ok&&f2ok&&f3ok&&itaOk;
+  const holdedOk=!!d.holded;
+  const allDone=f1ok&&f2ok&&f3ok&&itaOk&&holdedOk;
   if(allDone&&d.reg){
     if(d.web!=='') d.sit='COMPLETAT';
     else if(d.sit!=='COMPLETAT') showWebDialog(d);
@@ -248,6 +249,10 @@ function sitCell(d){
     <div class="sit-drop">${opts}</div>
   </div>`;
 }
+function holdedCell(d){
+  const canHold=(cT==='a'&&adminLevel)||(cT==='t'&&d.f1q===cU);
+  return `<td class="chold webcel"><input type="checkbox"${d.holded?' checked':''}${canHold?'':' disabled'} onchange="svs(${d.id},'holded',this.checked)"></td>`;
+}
 function itaCell(d){
   const v=d.ita||'';
   const ic=ITA_COLORS[v]||ITA_COLORS[''];
@@ -304,6 +309,7 @@ function rowHtml(d,isMaster){
     <td class="csit">${sitCell(d)}</td>
     <td class="ctke" style="text-align:center;color:#555">${isMaster&&d.tke?`<span class="ed" contenteditable="true" data-id="${d.id}" data-f="tke" onblur="reorderTke(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="cursor:text">${d.tke}</span>`:d.tke||''}</td>
     <td class="cfq">${selFQ(d,1)}</td><td class="cfd">${ec(d,'f1d',d.f1d)}</td>
+    ${holdedCell(d)}
     <td class="cfq">${selFQ(d,2)}</td><td class="cfd">${ec(d,'f2d',d.f2d)}</td>
     ${itaCell(d)}
     <td class="cfq">${selWebQ(d)}</td>
@@ -1044,8 +1050,18 @@ async function confirmNouReq(){
 }
 async function delRequerimentRow(id){
   if(!confirm('Eliminar aquest requeriment?'))return;
+  const req=REQ.find(x=>x.id===id);
+  const cupoId=req?req.cupo_id:null;
   await deleteRequerimentRow(id);
   REQ=REQ.filter(x=>x.id!==id);
+  if(cupoId&&!REQ.some(x=>x.cupo_id===cupoId)){
+    const d=D.find(x=>x.id===cupoId);
+    if(d&&d.te_requeriment){
+      d.te_requeriment=false;
+      try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut desmarcar Requeriment a Comercial:',e);}
+      renderComercial();
+    }
+  }
   renderRequerimentsTable();
 }
 function reqRowHtml(r){
@@ -1139,8 +1155,8 @@ async function sbGet(){
 async function sbInsert(d){
   const s=rowToSb(d);
   const res=await neonQuery(
-    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36) RETURNING *`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat]
+    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat,holded) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded]
   );
   return res.rows?.[0];
 }
@@ -1161,8 +1177,8 @@ async function sbUpdate(id,d){
     }
   }
   const res=await neonQuery(
-    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,updated_at=NOW() WHERE id=$37 RETURNING updated_at`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,id]
+    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,holded=$37,updated_at=NOW() WHERE id=$38 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,id]
   );
   d.updated_at=res.rows?.[0]?.updated_at;
 }
@@ -1192,7 +1208,7 @@ function rowToSb(d){
     pres:d.pres,presentat:d.presentat,resguard:d.resguard,notes:d.notes,
     proc_comercial_previ:d.proc_comercial_previ,te_requeriment:d.te_requeriment,primer_contacte:d.primer_contacte,
     proposta_presentada:d.proposta_presentada,proposta_enviada:d.proposta_enviada,
-    oferta_acceptada:d.oferta_acceptada,kickoff_esperat:d.kickoff_esperat};
+    oferta_acceptada:d.oferta_acceptada,kickoff_esperat:d.kickoff_esperat,holded:d.holded};
 }
 function sbToRow(r){
   return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',cup_ant:r.cup_ant||'',otorgat:r.otorgat||'',
@@ -1204,7 +1220,7 @@ function sbToRow(r){
     presentat:!!r.presentat,resguard:!!r.resguard,notes:r.notes||'',updated_at:r.updated_at||null,
     proc_comercial_previ:!!r.proc_comercial_previ,te_requeriment:!!r.te_requeriment,primer_contacte:r.primer_contacte||'',
     proposta_presentada:r.proposta_presentada||'',proposta_enviada:r.proposta_enviada||'',
-    oferta_acceptada:!!r.oferta_acceptada,kickoff_esperat:r.kickoff_esperat||''};
+    oferta_acceptada:!!r.oferta_acceptada,kickoff_esperat:r.kickoff_esperat||'',holded:!!r.holded};
 }
 
 // Indicador de guardat
@@ -1266,7 +1282,7 @@ async function addRow(){
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
     web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:'',
     proc_comercial_previ:false,te_requeriment:false,primer_contacte:'',proposta_presentada:'',
-    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:''};
+    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:'',holded:false};
   showSaving();
   try{
     const saved=await sbInsert(nou);

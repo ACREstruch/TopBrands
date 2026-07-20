@@ -1350,7 +1350,7 @@ async function svSit(id,val){
   document.querySelectorAll('.sit-drop.open').forEach(x=>x.classList.remove('open'));
   const d=D.find(x=>x.id===id);
   if(!d)return;
-  if(['COMPLETAT','PROCÉS'].includes(val)&&!d.reg)return;
+  if(['COMPLETAT','PROCÉS'].includes(val)&&!d.reg){alert('Cal indicar la data d\'Entrada abans de poder marcar '+val+'.');return;}
   d.sit=val;calcTickets();
   showSaving();
   try{await sbUpdate(d.id,d);showSaved();}catch(e){if(e.message!=='CANCELLED_BY_USER')showError(e.message);}

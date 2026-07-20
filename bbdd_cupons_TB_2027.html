@@ -86,10 +86,10 @@ tbody tr:nth-child(even){background:#f9f9f9;}
 thead th{position:sticky;top:0;z-index:3;background:#D9E1F2;}
 thead tr:nth-child(2) th{top:28px;}
 
-/* Sticky columnes fixes (taula BBDD): ×(22) KAM(52) Empresa(195) Nova(36) Cupó ant(68) Cupó(68) Otorgat(90) */
+/* Sticky columnes fixes (taula BBDD): ×(22) KAM(52) Empresa(195) Nova(36) Cupó ant(68) Cupó(68) */
 /* Els valors --stick* es recalculen dinàmicament (JS) a partir de l'amplada real
    renderitzada, per evitar desquadraments per arrodoniment de subpíxel amb zoom. */
-:root{--stick1:0px;--stick2:22px;--stick3:74px;--stick4:269px;--stick5:305px;--stick6:373px;--stick7:441px;}
+:root{--stick1:0px;--stick2:22px;--stick3:74px;--stick4:269px;--stick5:305px;--stick6:373px;}
 #table-wrap td:first-child, #table-wrap thead tr:first-child th:nth-child(1)
   {position:sticky;left:var(--stick1);z-index:4;background:#D9E1F2;}
 #table-wrap td.cg, #table-wrap thead tr:first-child th:nth-child(2)
@@ -102,10 +102,8 @@ thead tr:nth-child(2) th{top:28px;}
   {position:sticky;left:var(--stick5);z-index:4;background:#D9E1F2;}
 #table-wrap td.ccup, #table-wrap thead tr:first-child th:nth-child(6)
   {position:sticky;left:var(--stick6);z-index:4;background:#D9E1F2;border-left:1px solid #ddd;}
-#table-wrap td.cotor, #table-wrap thead tr:first-child th:nth-child(7)
-  {position:sticky;left:var(--stick7);z-index:4;background:#D9E1F2;}
-#table-wrap td.cg, #table-wrap td.cemp, #table-wrap td.cnov, #table-wrap td.ccupant, #table-wrap td.ccup, #table-wrap td.cotor, #table-wrap td:first-child{background:#fff;z-index:2;}
-#table-wrap td.cotor, #table-wrap thead tr:first-child th:nth-child(7){box-shadow:inset -3px 0 0 #E8622A;}
+#table-wrap td.cg, #table-wrap td.cemp, #table-wrap td.cnov, #table-wrap td.ccupant, #table-wrap td.ccup, #table-wrap td:first-child{background:#fff;z-index:2;}
+#table-wrap td.ccup, #table-wrap thead tr:first-child th:nth-child(6){box-shadow:inset -3px 0 0 #E8622A;}
 
 /* Sticky columnes fixes (taula Requeriments): ×, Empresa, Tiquet, Cupó, Expedient */
 :root{--rstick1:0px;--rstick2:22px;--rstick3:150px;--rstick4:200px;--rstick5:250px;}
@@ -129,7 +127,6 @@ thead tr:nth-child(2) th{top:28px;}
 .ccupant{width:68px;min-width:68px;max-width:68px;}
 .ccupant select, .ccupant span, .ccupant select option{color:#00B0F0!important;}
 .ccup{width:68px;min-width:68px;max-width:68px;}
-.cotor{width:90px;min-width:90px;max-width:90px;}
 .rq-date{width:60px;min-width:60px;max-width:60px;}
 
 /* Taula Comercial */
@@ -137,9 +134,10 @@ thead tr:nth-child(2) th{top:28px;}
 #com-table-wrap .cemp{width:195px;min-width:195px;max-width:195px;text-transform:uppercase;}
 #com-table-wrap .cnov{width:36px;min-width:36px;max-width:36px;}
 #com-table-wrap .ccup{width:68px;min-width:68px;max-width:68px;}
+.com-otor{width:90px;min-width:90px;max-width:90px;}
+.com-otor select{width:100%;}
 .com-check{width:80px;min-width:80px;max-width:80px;text-align:center;}
 .com-date{width:70px;min-width:70px;max-width:70px;}
-.cotor select{width:100%;}
 .ccon{width:143px;min-width:143px;max-width:143px;}
 .cmob{width:82px;min-width:82px;max-width:82px;}
 .ceml{width:155px;min-width:155px;max-width:155px;}
@@ -288,14 +286,6 @@ thead tr:nth-child(2) th{top:28px;}
             <option value="">Totes</option>
           </select>
         </div>
-        <div class="fi"><label>Otorgat</label>
-          <select id="fOtorSel" onchange="fOtor=this.value;render()">
-            <option value="">Tots</option>
-            <option value="SI">SI (OTORGAT)</option>
-            <option value="NO">NO (REFUSAT)</option>
-            <option value="REQUERIT">REQUERIT</option>
-          </select>
-        </div>
         <div class="fi"><label>Cerca</label>
           <input type="text" id="fQ" placeholder="empresa, contacte…" oninput="fQ=this.value;render()">
           <button onclick="document.getElementById('fQ').value='';fQ='';render()" style="border:none;background:none;cursor:pointer;color:#c00;font-size:14pt;font-weight:bold;padding:0 4px;line-height:1" title="Netejar">×</button>
@@ -338,7 +328,7 @@ thead tr:nth-child(2) th{top:28px;}
     <table>
       <colgroup>
         <col style="width:22px">
-        <col class="cg"><col class="cemp"><col class="cnov"><col class="ccupant"><col class="ccup"><col class="cotor">
+        <col class="cg"><col class="cemp"><col class="cnov"><col class="ccupant"><col class="ccup">
         <col class="ccon"><col class="cmob"><col class="ceml">
         <col class="creg"><col class="csit"><col class="ctke">
         <col class="cfq"><col class="cfd">
@@ -358,7 +348,6 @@ thead tr:nth-child(2) th{top:28px;}
           <th rowspan="3">Nova</th>
           <th rowspan="3">Cupó<br>anterior</th>
           <th rowspan="3">Cupó</th>
-          <th rowspan="3">Otorgat</th>
           <th rowspan="3">Contacte</th>
           <th rowspan="3">Mòbil</th>
           <th rowspan="3">eMail</th>
@@ -410,6 +399,7 @@ thead tr:nth-child(2) th{top:28px;}
           <th>Empresa</th>
           <th>Nova</th>
           <th>Cupó</th>
+          <th>Otorgat</th>
           <th>Procés<br>comercial<br>previ</th>
           <th>Requeriment</th>
           <th>Primer<br>contacte</th>

@@ -52,7 +52,7 @@ const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padS
 let D=[];
 let nid=1;
 let cU='Admin', cT='a';
-let fCup='', fSit='', fOtor='', fQ='', fWeb=false, fHora=false, fNova=false;
+let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
 let notesExpanded=new Set();
 let reqNotesExpanded=new Set();
 let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
@@ -236,10 +236,9 @@ function selWebQ(d){
   return `<select onchange="svs(${d.id},'webq',this.value)"><option value=""></option>${QW.map(x=>`<option${d.webq===x?' selected':''}>${x}</option>`).join('')}</select>`;
 }
 function sitCell(d){
-  const forced=OTORGAT_ESTAT[d.otorgat];
-  const sc=forced||SIT_COLORS[d.sit]||{};
+  const sc=SIT_COLORS[d.sit]||{};
   const bg=sc.bg||'',fg=sc.fg||'#222';
-  const label=forced?forced.label:(d.sit||'');
+  const label=d.sit||'';
   const canEditSit=(cT==='a'&&adminLevel==='master')||(cT==='t'&&d.sit!=='COMPLETAT');
   if(!canEditSit)return `<div style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
   const opts=(cT==='t'?SITS.filter(s=>s&&s!=='COMPLETAT'&&s!=='PROCÉS'):SITS.filter(s=>s))
@@ -298,7 +297,6 @@ function rowHtml(d,isMaster){
     <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''}${(cT==='a'&&adminLevel)?'':' disabled'} onchange="svs(${d.id},'nova',this.checked)"></td>
     <td class="ccupant">${sel(d,'cup_ant',CUPS,d.cup_ant)}</td>
     <td class="ccup">${sel(d,'cup',CUPS,d.cup)}</td>
-    <td class="cotor">${sel(d,'otorgat',OTORGAT_OPTS,d.otorgat)}</td>
     <td class="ccon">${ec(d,'cont',d.cont)}</td>
     <td class="cmob">${ec(d,'mob',d.mob)}</td>
     <td class="ceml">${ovCell(d.email,ec(d,'email',d.email))}</td>
@@ -333,12 +331,21 @@ function comCheckCell(d,f){
   const canEdit=cT==='a'&&adminLevel;
   return `<td class="com-check"><input type="checkbox"${d[f]?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'${f}',this.checked)"></td>`;
 }
+function comOtorgatCell(d){
+  const c=OTORGAT_ESTAT[d.otorgat]||{};
+  const bg=c.bg||'',fg=c.fg||'#222';
+  const canEdit=cT==='a'&&adminLevel;
+  if(!canEdit)return `<td class="com-otor" style="background:${bg};color:${fg}">${d.otorgat||''}</td>`;
+  const style=bg?` style="background:${bg};color:${fg}"`:'';
+  return `<td class="com-otor"><select${style} onchange="svs(${d.id},'otorgat',this.value)">${OTORGAT_OPTS.map(o=>`<option value="${o}"${d.otorgat===o?' selected':''}>${o||'—'}</option>`).join('')}</select></td>`;
+}
 function comRowHtml(d){
   return `<tr>
     <td class="cg">${d.g||''}</td>
     <td class="cemp">${d.emp||''}</td>
     <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''} disabled></td>
     <td class="ccup">${d.cup||''}</td>
+    ${comOtorgatCell(d)}
     ${comCheckColorCell(d,'proc_comercial_previ',OTORGAT_ESTAT.SI)}
     ${comCheckColorCell(d,'te_requeriment',OTORGAT_ESTAT.REQUERIT)}
     <td class="com-date">${ec(d,'primer_contacte',d.primer_contacte)}</td>
@@ -393,7 +400,6 @@ function render(){
     if(fNova&&!d.nova)return false;
     if(fCup&&d.cup!==fCup)return false;
     if(fSit&&d.sit!==fSit)return false;
-    if(fOtor&&d.otorgat!==fOtor)return false;
     if(fQ){const q=fQ.toLowerCase();if(!d.emp.toLowerCase().includes(q)&&!d.cont.toLowerCase().includes(q))return false;}
     return true;
   });
@@ -486,11 +492,11 @@ function adjustTableHeight(){
 }
 function updateStickyOffsets(){
   const ths=document.querySelectorAll('#table-wrap thead tr:first-child th');
-  if(ths.length<7)return;
+  if(ths.length<6)return;
   const root=document.documentElement.style;
   let sum=0;
   root.setProperty('--stick1','0px');
-  for(let i=0;i<6;i++){
+  for(let i=0;i<5;i++){
     sum+=ths[i].offsetWidth;
     root.setProperty('--stick'+(i+2),sum+'px');
   }

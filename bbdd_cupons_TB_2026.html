@@ -394,6 +394,23 @@ thead tr:nth-child(2) th{top:28px;}
 <!-- ═══════════════ TAB COMERCIAL ═══════════════ -->
 <div id="tab-comercial" class="tab-content">
   <div class="hint" id="com-hint">Empreses amb 'Presentat' marcat a BBDD — ordenades per Ticket.</div>
+  <div class="top-row">
+    <div class="grp recompte-grp">
+      <div class="recompte-inner" id="recomptes-comercial"></div>
+    </div>
+    <div class="grp filter-grp">
+      <div class="filter-row">
+        <div class="fi"><label>Otorgat</label>
+          <select id="fComOtorSel" onchange="fComOtor=this.value;renderComercial()">
+            <option value="">Tots</option>
+            <option value="SI">SI (OTORGAT)</option>
+            <option value="NO">NO (REFUSAT)</option>
+            <option value="REQUERIT">REQUERIT</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="table-wrap" id="com-table-wrap">
     <table>
       <thead>

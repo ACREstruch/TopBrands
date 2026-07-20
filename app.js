@@ -53,6 +53,7 @@ let D=[];
 let nid=1;
 let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
+let fComOtor='';
 let notesExpanded=new Set();
 let reqNotesExpanded=new Set();
 let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
@@ -361,10 +362,28 @@ function comRowHtml(d){
     <td class="com-date">${ec(d,'kickoff_esperat',d.kickoff_esperat)}</td>
   </tr>`;
 }
+function comOtorgatCounts(){
+  const completatsCount=D.filter(d=>d.sit==='COMPLETAT').length;
+  const otorgatsCount=D.filter(d=>d.otorgat==='SI').length;
+  const refusatsCount=D.filter(d=>d.otorgat==='NO').length;
+  const requeritsCount=D.filter(d=>d.otorgat==='REQUERIT').length;
+  const pendentsCount=completatsCount-otorgatsCount-refusatsCount;
+  return [
+    {l:'COMPLETATS',n:completatsCount,bg:'#00B050',fg:'#fff'},
+    {l:'OTORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
+    {l:'REFUSATS',n:refusatsCount,bg:'#808080',fg:'#fff'},
+    {l:'PENDENTS',n:pendentsCount,bg:'#fff',fg:'#222'},
+    {l:'REQUERITS',n:requeritsCount,bg:'#F2CEED',fg:'#000'},
+  ];
+}
 function renderComercial(){
-  const rows=D.filter(d=>d.presentat).sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
+  let rows=D.filter(d=>d.presentat);
+  if(fComOtor)rows=rows.filter(d=>d.otorgat===fComOtor);
+  rows=rows.sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
   const tbody=document.getElementById('com-tbody');
   if(tbody)tbody.innerHTML=rows.map(comRowHtml).join('');
+  const rcEl=document.getElementById('recomptes-comercial');
+  if(rcEl)rcEl.innerHTML=comOtorgatCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
 }
 
 function toggleGroup(sit){
@@ -422,10 +441,6 @@ function render(){
   SITS.filter(s=>s).forEach(s=>cnt[s]=0);
   D.forEach(d=>{if(cnt[d.sit]!==undefined)cnt[d.sit]++;});
   const total=D.length;
-  const otorgatsCount=D.filter(d=>d.otorgat==='SI').length;
-  const refusatsCount=D.filter(d=>d.otorgat==='NO').length;
-  const requeritsCount=D.filter(d=>d.otorgat==='REQUERIT').length;
-  const pendentsCount=(cnt['COMPLETAT']||0)-otorgatsCount-refusatsCount;
   const rc=[
     {l:'REGISTRES',n:total,bg:'#fff',fg:'#222'},
     {l:'PROCÉS',n:cnt['PROCÉS'],bg:'#DAF2D0',fg:'#222'},
@@ -435,11 +450,7 @@ function render(){
     {l:'NO COMPLEIX',n:cnt['NO COMPLEIX'],bg:'#fff',fg:'#222'},
     {l:'NUL',n:cnt['NUL'],bg:'#fff',fg:'#222'},
     {gap:true},
-    {l:'COMPLETATS',n:cnt['COMPLETAT'],bg:'#00B050',fg:'#fff'},
-    {l:'OTORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
-    {l:'REFUSATS',n:refusatsCount,bg:'#808080',fg:'#fff'},
-    {l:'PENDENTS',n:pendentsCount,bg:'#fff',fg:'#222'},
-    {l:'REQUERITS',n:requeritsCount,bg:'#F2CEED',fg:'#000'},
+    ...comOtorgatCounts(),
   ];
   document.getElementById('recomptes').innerHTML=rc.map(r=>r.gap?`<div style="width:18px"></div>`:`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
 

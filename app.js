@@ -10,10 +10,11 @@ let A=['Admin'];
 let pins={}; // {nom Presentador Fitxa/Tramitador dia-D: PIN}
 let unlockedNames=new Set(); // noms desbloquejats amb PIN durant aquesta sessió
 let G=['JE','JR','OG'];
-let T=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL']; // Equip: genera els botons TRM i PRT
-let TF3=[...T];
+let PF=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL']; // Presentadors Fitxa: genera el botó de rol
+let TD=[...PF]; // Tramitadors dia-D: genera el botó de rol (llista independent de PF)
+let TF3=[...PF];
 let TFH=['AG']; // Equip Hora: genera el botó del rol Hora
-let QW=[...T]; // Equip Web: genera el botó del rol Web
+let QW=[...PF]; // Equip Web: genera el botó del rol Web
 let WEBLIST=['SI','NO','SBY','PROB'];
 let CUPS=['','CEXP','PI','EC','IA'];
 let SITS=['','COMPLETAT','PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'];
@@ -231,7 +232,7 @@ function sel(d,f,list,v){
   return `<select onchange="svs(${d.id},'${f}',this.value)">${emptyOpt}${list.map(x=>`<option value="${x}"${v===x?' selected':''}>${x}</option>`).join('')}</select>`;
 }
 function selFQ(d,n){
-  const f='f'+n+'q', lst=n===1?T:n===2?G:TF3, v=d[f];
+  const f='f'+n+'q', lst=n===1?PF:n===2?G:TF3, v=d[f];
   if(cT!=='a'||!adminLevel)return `<span>${v||''}</span>`;
   return `<select onchange="svs(${d.id},'${f}',this.value)"><option value=""></option>${lst.map(x=>`<option${v===x?' selected':''}>${x}</option>`).join('')}</select>`;
 }
@@ -290,7 +291,7 @@ function webCell(d){
 }
 function presCell(d){
   if(cT!=='a'||adminLevel!=='master')return `<td class="cpres">${d.pres||''}</td>`;
-  return `<td class="cpres"><select onchange="svs(${d.id},'pres',this.value)"><option value=""></option>${T.map(x=>`<option${d.pres===x?' selected':''}>${x}</option>`).join('')}</select></td>`;
+  return `<td class="cpres"><select onchange="svs(${d.id},'pres',this.value)"><option value=""></option>${TD.map(x=>`<option${d.pres===x?' selected':''}>${x}</option>`).join('')}</select></td>`;
 }
 function presTd(d){
   const canP=d.sit==='COMPLETAT'&&d.pres&&((cT==='a'&&adminLevel==='master')||(cT==='p'&&d.pres===cU));
@@ -644,7 +645,7 @@ function schCell(d){
   </div>`;
 }
 function renderSchTickets(){
-  const presos=T.filter(p=>D.some(d=>d.pres===p&&d.sit==='COMPLETAT'));
+  const presos=TD.filter(p=>D.some(d=>d.pres===p&&d.sit==='COMPLETAT'));
   document.getElementById('sch-tickets-head').innerHTML=`<tr><th>Hora</th>${presos.map(p=>`<th>${p}</th>`).join('')}</tr>`;
   document.getElementById('sch-tickets-body').innerHTML=SCH_HORES.map(h=>{
     const cells=presos.map(p=>{
@@ -735,8 +736,8 @@ function scrollTable(px){
 function rebuildRoleBtns(){
   document.getElementById('rbA').innerHTML=A.map(u=>`<button class="rbtn${u===cU&&cT==='a'?' active':''}" onclick="setU('${u}','a')">${u==='Admin'?'Menú':u}</button>`).join('');
   document.getElementById('rbG').innerHTML=G.map(u=>`<button class="rbtn${u===cU&&cT==='g'?' active':''}" onclick="setU('${u}','g')">${u}</button>`).join('');
-  document.getElementById('rbT').innerHTML=T.map(u=>`<button class="rbtn${u===cU&&cT==='t'?' active':''}" onclick="setU('${u}','t')">${u}</button>`).join('');
-  document.getElementById('rbP').innerHTML=T.map(u=>`<button class="rbtn${u===cU&&cT==='p'?' active':''}" onclick="setU('${u}','p')">${u}</button>`).join('');
+  document.getElementById('rbT').innerHTML=PF.map(u=>`<button class="rbtn${u===cU&&cT==='t'?' active':''}" onclick="setU('${u}','t')">${u}</button>`).join('');
+  document.getElementById('rbP').innerHTML=TD.map(u=>`<button class="rbtn${u===cU&&cT==='p'?' active':''}" onclick="setU('${u}','p')">${u}</button>`).join('');
   document.getElementById('rbW').innerHTML=QW.map(u=>`<button class="rbtn${u===cU&&cT==='w'?' active':''}" onclick="setU('${u}','w')">${u}</button>`).join('');
   document.getElementById('rbH').innerHTML=TFH.map(u=>`<button class="rbtn${u===cU&&cT==='h'?' active':''}" onclick="setU('${u}','h')">${u}</button>`).join('');
 }
@@ -846,7 +847,8 @@ async function changePw(){
 function renderLlistes(){
   const llistes=[
     {title:'KAM',arr:G,key:'g',note:''},
-    {title:'Equip',arr:T,key:'t',note:'(Presentadors Fitxa/Tramitadors dia-D = Qui Omplir)'},
+    {title:'Presentadors Fitxa',arr:PF,key:'pf',note:'(= Qui Omplir)'},
+    {title:'Tramitadors dia-D',arr:TD,key:'td',note:'(= Qui Presenta)'},
     {title:'Gestor Web',arr:QW,key:'qw',note:'(= Qui Web)'},
     {title:'Gestor Hora',arr:TFH,key:'tfh',note:'(= Qui Hora)'},
     {title:'Cupons',arr:CUPS.filter(x=>x),key:'c',note:''},
@@ -861,7 +863,7 @@ function renderLlistes(){
     <div class="llista-grp">
       <h4>${l.title}${l.note?` <span class="llista-note">${l.note}</span>`:''}</h4>
       ${l.arr.map(v=>{
-        const pinField=(l.key==='t'||l.key==='qw'||l.key==='tfh')?`<input type="text" value="${pins[v]||''}" placeholder="PIN" class="llista-pin" onchange="setPin('${v}',this.value.trim())">`:'';
+        const pinField=(l.key==='pf'||l.key==='td'||l.key==='qw'||l.key==='tfh')?`<input type="text" value="${pins[v]||''}" placeholder="PIN" class="llista-pin" onchange="setPin('${v}',this.value.trim())">`:'';
         return `<div class="llista-item"><span>${v}</span><span style="display:flex;align-items:center">${pinField}<button class="llista-del" onclick="removeFromList('${l.key}','${v}')">×</button></span></div>`;
       }).join('')}
       <div class="llista-add">
@@ -876,7 +878,8 @@ function addToList(key){
   if(!v)return;
   let arr=null;
   if(key==='g'&&!G.includes(v)){G.push(v);arr=G;}
-  else if(key==='t'&&!T.includes(v)){T.push(v);rebuildRoleBtns();arr=T;}
+  else if(key==='pf'&&!PF.includes(v)){PF.push(v);rebuildRoleBtns();arr=PF;}
+  else if(key==='td'&&!TD.includes(v)){TD.push(v);rebuildRoleBtns();arr=TD;}
   else if(key==='qw'&&!QW.includes(v)){QW.push(v);rebuildRoleBtns();arr=QW;}
   else if(key==='c'&&!CUPS.includes(v)){CUPS.push(v);arr=CUPS;}
   else if(key==='s'&&!SITS.includes(v)){SITS.push(v);arr=SITS;}
@@ -892,7 +895,8 @@ function addToList(key){
 function removeFromList(key,v){
   let arr=null;
   if(key==='g'){G=G.filter(x=>x!==v);arr=G;}
-  else if(key==='t'){T=T.filter(x=>x!==v);rebuildRoleBtns();arr=T;}
+  else if(key==='pf'){PF=PF.filter(x=>x!==v);rebuildRoleBtns();arr=PF;}
+  else if(key==='td'){TD=TD.filter(x=>x!==v);rebuildRoleBtns();arr=TD;}
   else if(key==='qw'){QW=QW.filter(x=>x!==v);rebuildRoleBtns();arr=QW;}
   else if(key==='c'){CUPS=CUPS.filter(x=>x!==v&&x!=='');if(!CUPS.includes(''))CUPS.unshift('');arr=CUPS;}
   else if(key==='s'){SITS=SITS.filter(x=>x!==v&&x!=='');if(!SITS.includes(''))SITS.unshift('');arr=SITS;}
@@ -1331,7 +1335,7 @@ async function init(){
   try{
     const[pw,lists,pinMap]=await Promise.all([getMasterPw(),getAllLists(),getPins()]);
     if(pw)ADMIN_PW_MASTER=pw;
-    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.qw)QW=lists.qw;
+    if(lists.g)G=lists.g; if(lists.pf)PF=lists.pf; if(lists.td)TD=lists.td; if(lists.qw)QW=lists.qw;
     if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
     if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
     if(lists.otorgat)OTORGAT_OPTS=lists.otorgat;
@@ -1483,11 +1487,11 @@ setInterval(async()=>{
     let changed=false;
     if(pw&&pw!==ADMIN_PW_MASTER){ADMIN_PW_MASTER=pw;}
     if(JSON.stringify(pinMap)!==JSON.stringify(pins)){pins=pinMap;changed=true;}
-    const curLists={g:G,t:T,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH,otorgat:OTORGAT_OPTS,reqestat:REQ_ESTAT_OPTS,resolucio:RESOLUCIO_OPTS};
+    const curLists={g:G,pf:PF,td:TD,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH,otorgat:OTORGAT_OPTS,reqestat:REQ_ESTAT_OPTS,resolucio:RESOLUCIO_OPTS};
     Object.keys(curLists).forEach(k=>{
       if(lists[k]&&JSON.stringify(lists[k])!==JSON.stringify(curLists[k]))changed=true;
     });
-    if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.qw)QW=lists.qw;
+    if(lists.g)G=lists.g; if(lists.pf)PF=lists.pf; if(lists.td)TD=lists.td; if(lists.qw)QW=lists.qw;
     if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
     if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
     if(lists.otorgat)OTORGAT_OPTS=lists.otorgat;

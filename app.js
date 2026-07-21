@@ -38,6 +38,7 @@ const ITA_COLORS={
   'REBUT':    {bg:'#DAF2D0',fg:'#222'},
 };
 const WEB_COLORS={'NO':{bg:'#F4CCCC',fg:'#000'},'SBY':{bg:'#FFEB9C',fg:'#222'}};
+const CUP_COLORS={CEXP:{bg:'#EEEDFE',fg:'#534AB7'},PI:{bg:'#E1F5EE',fg:'#0F6E56'},EC:{bg:'#E6F1FB',fg:'#185FA5'},IA:{bg:'#FAEEDA',fg:'#854F0B'}};
 const OTORGAT_ESTAT={
   'SI':{label:'OTORGAT',bg:'#A02B93',fg:'#fff'},
   'NO':{label:'REFUSAT',bg:'#808080',fg:'#fff'},
@@ -392,6 +393,24 @@ function comOtorgatCounts(){
     {l:'REQUERITS',n:requeritsCount,bg:'#F2CEED',fg:'#000'},
   ];
 }
+function cupPresentatCounts(){
+  return ['CEXP','PI','EC','IA'].map(c=>{
+    const col=CUP_COLORS[c];
+    return {l:c,n:D.filter(d=>d.presentat&&d.cup===c).length,bg:col.bg,fg:col.fg};
+  });
+}
+function cupActiusRefusatsCounts(){
+  const out=[];
+  ['CEXP','PI','EC','IA'].forEach(c=>{
+    const col=CUP_COLORS[c];
+    const total=D.filter(d=>d.presentat&&d.cup===c);
+    const refusats=total.filter(d=>d.otorgat==='NO').length;
+    const actius=total.length-refusats;
+    out.push({l:c,n:actius,bg:col.bg,fg:col.fg});
+    out.push({l:c+' REFUSATS',n:refusats,bg:'#808080',fg:'#fff'});
+  });
+  return out;
+}
 function renderComercial(){
   let rows=D.filter(d=>d.presentat);
   if(fComOtor)rows=rows.filter(d=>d.otorgat===fComOtor);
@@ -400,6 +419,8 @@ function renderComercial(){
   if(tbody)tbody.innerHTML=rows.map(comRowHtml).join('');
   const rcEl=document.getElementById('recomptes-comercial');
   if(rcEl)rcEl.innerHTML=comOtorgatCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+  const rcCupEl=document.getElementById('recomptes-cupo-comercial');
+  if(rcCupEl)rcCupEl.innerHTML=cupActiusRefusatsCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
   const novesComCount=D.filter(d=>d.presentat&&d.nova).length;
   const rcNovaEl=document.getElementById('recomptes-nova-comercial');
   if(rcNovaEl)rcNovaEl.innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesComCount}</span><span class="rc-l">NOVES</span></div>`;
@@ -473,6 +494,7 @@ function render(){
     ...comOtorgatCounts(),
   ];
   document.getElementById('recomptes').innerHTML=rc.map(r=>r.gap?`<div style="width:18px"></div>`:`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+  document.getElementById('recomptes-cupo').innerHTML=cupPresentatCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
 
   const novesCount=D.filter(d=>d.nova).length;
   document.getElementById('recomptes-nova').innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesCount}</span><span class="rc-l">NOVES</span></div>`;

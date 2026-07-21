@@ -335,6 +335,14 @@ function comCheckColorCell(d,f,colorObj){
   const canEdit=cT==='a'&&adminLevel;
   return `<td class="com-check" style="background:${bg};color:${fg}"><input type="checkbox"${d[f]?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'${f}',this.checked)"></td>`;
 }
+function comReqEstatCell(d){
+  const reqs=REQ.filter(r=>r.cupo_id===d.id);
+  const latest=reqs.length?reqs.reduce((a,b)=>b.id>a.id?b:a):null;
+  const estat=latest?(latest.estat||''):'';
+  const c=REQ_ESTAT_COLORS[estat]||{};
+  const bg=c.bg||'',fg=c.fg||'#222';
+  return `<td class="com-req" style="background:${bg};color:${fg}">${estat}</td>`;
+}
 function comCheckCell(d,f){
   const canEdit=cT==='a'&&adminLevel;
   return `<td class="com-check"><input type="checkbox"${d[f]?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'${f}',this.checked)"></td>`;
@@ -354,7 +362,7 @@ function comRowHtml(d){
     <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''} onclick="return false;" style="cursor:default"></td>
     <td class="ccup">${d.cup||''}</td>
     ${comOtorgatCell(d)}
-    ${comCheckColorCell(d,'te_requeriment',OTORGAT_ESTAT.REQUERIT)}
+    ${comReqEstatCell(d)}
     ${comCheckColorCell(d,'proc_comercial_previ',OTORGAT_ESTAT.SI)}
     <td class="com-date">${ec(d,'primer_contacte',d.primer_contacte)}</td>
     <td class="com-date">${ec(d,'proposta_presentada',d.proposta_presentada)}</td>
@@ -1065,9 +1073,9 @@ async function confirmNouReq(){
   document.getElementById('nou-req-dialog').remove();
   await insertRequerimentRow(cupoId);
   const d=D.find(x=>x.id===cupoId);
-  if(d&&!d.te_requeriment){
-    d.te_requeriment=true;
-    try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut marcar Requeriment a Comercial:',e);}
+  if(d&&d.otorgat!=='REQUERIT'){
+    d.otorgat='REQUERIT';
+    try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut marcar Otorgat com a REQUERIT:',e);}
     renderComercial();
   }
   renderRequeriments();
@@ -1080,9 +1088,9 @@ async function delRequerimentRow(id){
   REQ=REQ.filter(x=>x.id!==id);
   if(cupoId&&!REQ.some(x=>x.cupo_id===cupoId)){
     const d=D.find(x=>x.id===cupoId);
-    if(d&&d.te_requeriment){
-      d.te_requeriment=false;
-      try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut desmarcar Requeriment a Comercial:',e);}
+    if(d&&d.otorgat==='REQUERIT'){
+      d.otorgat='';
+      try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut buidar Otorgat:',e);}
       renderComercial();
     }
   }
@@ -1280,6 +1288,12 @@ async function init(){
     render(); // mostra buit si falla
   }
   try{
+    REQ=await getRequeriments();
+    renderComercial();
+  }catch(e){
+    console.error('Error carregant requeriments:',e);
+  }
+  try{
     const admins=await sbGetAdmins();
     A=['Admin',...admins.map(x=>x.name)];
     ADMIN_PWS={};admins.forEach(x=>ADMIN_PWS[x.name]=x.password);
@@ -1410,6 +1424,14 @@ setInterval(async()=>{
       calcTickets();render();
     }
   }catch(e){console.warn('Polling error:',e);}
+  try{
+    const nouReq=await getRequeriments();
+    if(JSON.stringify(nouReq)!==JSON.stringify(REQ)){
+      REQ=nouReq;
+      renderComercial();
+      if(document.getElementById('tab-requeriments').classList.contains('active'))renderRequerimentsTable();
+    }
+  }catch(e){console.warn('Polling requeriments error:',e);}
   try{
     const admins=await sbGetAdmins();
     const nouA=['Admin',...admins.map(x=>x.name)];

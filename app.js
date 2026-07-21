@@ -46,7 +46,10 @@ const REQ_ESTAT_COLORS={
   'PENDENT PRESENTACIÓ':{bg:'#FFD966',fg:'#3d2b00'},
   'PRESENTAT':          {bg:'#8FD19E',fg:'#163d1f'},
   'PERDUT':             {bg:'#EA9999',fg:'#4a0000'},
+  'RESOLT':             {bg:'#8FD19E',fg:'#163d1f'},
+  'OTORGAT':            {bg:'#A02B93',fg:'#fff'},
 };
+const RESOLUCIO_TO_ESTAT={'CONCEDIT':'OTORGAT','RESOLT':'RESOLT','REFUSAT':'PERDUT','INADMISSIÓ':'PERDUT'};
 const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padStart(2,'0')}:00`);if(i<15)h.push(`${String(i).padStart(2,'0')}:30`);}return h;})();
 
 let D=[];
@@ -1001,8 +1004,24 @@ function selReqEstat(r){
   const label=r.estat||'N/A';
   if(!isMasterActive())return `<div style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
   const style=bg?` style="background:${bg};color:${fg}"`:'';
-  const opts=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','No aplica'];
+  const opts=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','RESOLT','OTORGAT','No aplica'];
   return `<select${style} onchange="svsReq(${r.id},'estat',this.value)">${opts.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'N/A'}</option>`).join('')}</select>`;
+}
+function selResolucioFinal(r){
+  if(!isMasterActive())return `<span>${r.resolucio_final||''}</span>`;
+  const opts=['','CONCEDIT','RESOLT','INADMISSIÓ','REFUSAT'];
+  return `<select onchange="svsReqResolucio(${r.id},this.value)">${opts.map(o=>`<option value="${o}"${r.resolucio_final===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
+}
+async function svsReqResolucio(id,val){
+  const r=REQ.find(x=>x.id===id); if(!r)return;
+  r.resolucio_final=val;
+  await updateRequerimentField(id,'resolucio_final',val);
+  const novEstat=RESOLUCIO_TO_ESTAT[val];
+  if(novEstat){
+    r.estat=novEstat;
+    await updateRequerimentField(id,'estat',novEstat);
+  }
+  renderRequerimentsTable();
 }
 function reqTodoCell(r){
   const master=isMasterActive();
@@ -1112,7 +1131,7 @@ function reqRowHtml(r){
     ${reqTodoCell(r)}
     <td class="rq-date">${ecReq(r,'data_presentacio',r.data_presentacio)}</td>
     ${reqWideCell(r,'comentaris_kam',ecReq(r,'comentaris_kam',r.comentaris_kam,true))}
-    <td>${ecReq(r,'resolucio_final',r.resolucio_final)}</td>
+    <td>${selResolucioFinal(r)}</td>
     <td class="rq-date">${ecReq(r,'data_resolucio',r.data_resolucio)}</td>
   </tr>`;
 }

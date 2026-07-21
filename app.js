@@ -490,16 +490,10 @@ function render(){
     {l:'FA COMPE',n:cnt['FA COMPE'],bg:'#fff',fg:'#222'},
     {l:'NO COMPLEIX',n:cnt['NO COMPLEIX'],bg:'#fff',fg:'#222'},
     {l:'NUL',n:cnt['NUL'],bg:'#fff',fg:'#222'},
-    {gap:true},
-    ...comOtorgatCounts(),
   ];
-  document.getElementById('recomptes').innerHTML=rc.map(r=>r.gap?`<div style="width:18px"></div>`:`<div class="rcomp"${r.l==='COMPLETATS'?' id="tile-completats"':''} style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
-  const cupoEl=document.getElementById('recomptes-cupo');
-  cupoEl.innerHTML=cupPresentatCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
-  requestAnimationFrame(()=>{
-    const compEl=document.getElementById('tile-completats');
-    if(compEl)cupoEl.style.marginLeft=(compEl.getBoundingClientRect().left-cupoEl.parentElement.getBoundingClientRect().left)+'px';
-  });
+  document.getElementById('recomptes').innerHTML=rc.map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+  document.getElementById('recomptes-otorgats').innerHTML=comOtorgatCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+  document.getElementById('recomptes-cupo').innerHTML=cupPresentatCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
 
   const novesCount=D.filter(d=>d.nova).length;
   document.getElementById('recomptes-nova').innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesCount}</span><span class="rc-l">NOVES</span></div>`;

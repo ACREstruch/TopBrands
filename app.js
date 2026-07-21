@@ -351,11 +351,11 @@ function comRowHtml(d){
   return `<tr>
     <td class="cg">${d.g||''}</td>
     <td class="cemp">${d.emp||''}</td>
-    <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''} disabled></td>
+    <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''} onclick="return false;" style="cursor:default"></td>
     <td class="ccup">${d.cup||''}</td>
     ${comOtorgatCell(d)}
-    ${comCheckColorCell(d,'proc_comercial_previ',OTORGAT_ESTAT.SI)}
     ${comCheckColorCell(d,'te_requeriment',OTORGAT_ESTAT.REQUERIT)}
+    ${comCheckColorCell(d,'proc_comercial_previ',OTORGAT_ESTAT.SI)}
     <td class="com-date">${ec(d,'primer_contacte',d.primer_contacte)}</td>
     <td class="com-date">${ec(d,'proposta_presentada',d.proposta_presentada)}</td>
     <td class="com-date">${ec(d,'proposta_enviada',d.proposta_enviada)}</td>

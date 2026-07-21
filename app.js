@@ -7,7 +7,7 @@ let myAdminPw=''; // contrasenya amb la qual l'Admin actual ha entrat (per detec
 let authedAs=''; // nom amb el qual s'ha superat el checkPw() actual
 let adminLevel=''; // '' | 'admin' | 'master'
 let A=['Admin'];
-let pins={}; // {nom Tramitador/Presentador: PIN}
+let pins={}; // {nom Presentador Fitxa/Tramitador dia-D: PIN}
 let unlockedNames=new Set(); // noms desbloquejats amb PIN durant aquesta sessió
 let G=['JE','JR','OG'];
 let T=['AC','AG','AM','AMO','CR','GP','JE','JP','JR','MO','OG','PL','PO','RL']; // Equip: genera els botons TRM i PRT
@@ -17,7 +17,7 @@ let QW=[...T]; // Equip Web: genera el botó del rol Web
 let WEBLIST=['SI','NO','SBY','PROB'];
 let CUPS=['','CEXP','PI','EC','IA'];
 let SITS=['','COMPLETAT','PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'];
-const OTORGAT_OPTS=['','SI','NO','REQUERIT'];
+let OTORGAT_OPTS=['','SI','NO','REQUERIT'];
 
 const SIT_COLORS={
   'COMPLETAT':  {bg:'#00B050',fg:'#fff'},
@@ -50,6 +50,8 @@ const REQ_ESTAT_COLORS={
   'OTORGAT':            {bg:'#A02B93',fg:'#fff'},
 };
 const RESOLUCIO_TO_ESTAT={'':'','CONCEDIT':'OTORGAT','RESOLT':'RESOLT','REFUSAT':'PERDUT','INADMISSIÓ':'PERDUT'};
+let REQ_ESTAT_OPTS=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','RESOLT','OTORGAT','No aplica'];
+let RESOLUCIO_OPTS=['','CONCEDIT','RESOLT','INADMISSIÓ','REFUSAT'];
 const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padStart(2,'0')}:00`);if(i<15)h.push(`${String(i).padStart(2,'0')}:30`);}return h;})();
 
 let D=[];
@@ -412,7 +414,7 @@ function render(){
   rebuildRoleBtns();
 
   const hints={a:adminLevel==='master'?'Master autenticat — edició completa i gestió d\'admins.':adminLevel==='admin'?`Admin ${cU} — creació de registres i dades bàsiques.`:'Vista general — seleccioneu el vostre rol o autentiqueu-vos via ☰ Admin.',g:`KAM ${cU} — els vostres registres.`,
-    t:`Tramitador ${cU} — editeu les vostres fitxes i l'ITA.`,p:`Presentador ${cU} — editeu Presentat i Resguard.`,
+    t:`Presentador Fitxa ${cU} — editeu les vostres fitxes i l'ITA.`,p:`Tramitador dia-D ${cU} — editeu Presentat i Resguard.`,
     w:`Gestor Web ${cU} — editeu Web, URL web inicial i URL web final.`,h:`Gestor Hora ${cU} — editeu la Validar Hora.`};
   document.getElementById('hint-txt').textContent=hints[cT]||'';
 
@@ -844,26 +846,29 @@ async function changePw(){
 function renderLlistes(){
   const llistes=[
     {title:'KAM',arr:G,key:'g',note:''},
-    {title:'Equip',arr:T,key:'t',note:'(Tramitadors/Presentadors = Qui Omplir)'},
+    {title:'Equip',arr:T,key:'t',note:'(Presentadors Fitxa/Tramitadors dia-D = Qui Omplir)'},
     {title:'Gestor Web',arr:QW,key:'qw',note:'(= Qui Web)'},
     {title:'Gestor Hora',arr:TFH,key:'tfh',note:'(= Qui Hora)'},
     {title:'Cupons',arr:CUPS.filter(x=>x),key:'c',note:''},
-    {title:'Estats',arr:SITS.filter(x=>x),key:'s',note:''},
+    {title:'Estat LEAD',arr:SITS.filter(x=>x),key:'s',note:''},
     {title:'Web',arr:WEBLIST,key:'web',note:''},
     {title:'Qui — Valid.',arr:TF3,key:'tf3',note:'(llista pròpia)'},
+    {title:'Otorgat',arr:OTORGAT_OPTS.filter(x=>x),key:'otorgat',note:''},
+    {title:'Estat requeriment',arr:REQ_ESTAT_OPTS.filter(x=>x),key:'reqestat',note:''},
+    {title:'Resolució final',arr:RESOLUCIO_OPTS.filter(x=>x),key:'resolucio',note:''},
   ];
-  document.getElementById('llistes-contingut').innerHTML=llistes.map(l=>`
+  document.getElementById('llistes-contingut').innerHTML=`<div class="llistes-grid">${llistes.map(l=>`
     <div class="llista-grp">
-      <h4>${l.title} <span style="font-weight:normal;color:#aaa">${l.note}</span></h4>
+      <h4>${l.title}${l.note?` <span class="llista-note">${l.note}</span>`:''}</h4>
       ${l.arr.map(v=>{
-        const pinField=(l.key==='t'||l.key==='qw'||l.key==='tfh')?`<input type="text" value="${pins[v]||''}" placeholder="PIN" style="width:52px;border:1px solid #ccc;border-radius:3px;padding:1px 4px;font-size:8.5pt;margin-right:4px" onchange="setPin('${v}',this.value.trim())">`:'';
+        const pinField=(l.key==='t'||l.key==='qw'||l.key==='tfh')?`<input type="text" value="${pins[v]||''}" placeholder="PIN" class="llista-pin" onchange="setPin('${v}',this.value.trim())">`:'';
         return `<div class="llista-item"><span>${v}</span><span style="display:flex;align-items:center">${pinField}<button class="llista-del" onclick="removeFromList('${l.key}','${v}')">×</button></span></div>`;
       }).join('')}
       <div class="llista-add">
         <input type="text" id="inp-${l.key}" placeholder="Afegir…">
         <button onclick="addToList('${l.key}')">+</button>
       </div>
-    </div>`).join('');
+    </div>`).join('')}</div>`;
 }
 function addToList(key){
   const el=document.getElementById('inp-'+key);
@@ -878,7 +883,10 @@ function addToList(key){
   else if(key==='web'&&!WEBLIST.includes(v)){WEBLIST.push(v);arr=WEBLIST;}
   else if(key==='tf3'&&!TF3.includes(v)){TF3.push(v);arr=TF3;}
   else if(key==='tfh'&&!TFH.includes(v)){TFH.push(v);rebuildRoleBtns();arr=TFH;}
-  el.value='';renderLlistes();render();
+  else if(key==='otorgat'&&!OTORGAT_OPTS.includes(v)){OTORGAT_OPTS.push(v);arr=OTORGAT_OPTS;}
+  else if(key==='reqestat'&&!REQ_ESTAT_OPTS.includes(v)){REQ_ESTAT_OPTS.push(v);arr=REQ_ESTAT_OPTS;}
+  else if(key==='resolucio'&&!RESOLUCIO_OPTS.includes(v)){RESOLUCIO_OPTS.push(v);arr=RESOLUCIO_OPTS;}
+  el.value='';renderLlistes();render();renderRequerimentsTable();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
 function removeFromList(key,v){
@@ -891,7 +899,10 @@ function removeFromList(key,v){
   else if(key==='web'){WEBLIST=WEBLIST.filter(x=>x!==v);arr=WEBLIST;}
   else if(key==='tf3'){TF3=TF3.filter(x=>x!==v);arr=TF3;}
   else if(key==='tfh'){TFH=TFH.filter(x=>x!==v);rebuildRoleBtns();arr=TFH;}
-  renderLlistes();render();
+  else if(key==='otorgat'){OTORGAT_OPTS=OTORGAT_OPTS.filter(x=>x!==v&&x!=='');if(!OTORGAT_OPTS.includes(''))OTORGAT_OPTS.unshift('');arr=OTORGAT_OPTS;}
+  else if(key==='reqestat'){REQ_ESTAT_OPTS=REQ_ESTAT_OPTS.filter(x=>x!==v&&x!=='');if(!REQ_ESTAT_OPTS.includes(''))REQ_ESTAT_OPTS.unshift('');arr=REQ_ESTAT_OPTS;}
+  else if(key==='resolucio'){RESOLUCIO_OPTS=RESOLUCIO_OPTS.filter(x=>x!==v&&x!=='');if(!RESOLUCIO_OPTS.includes(''))RESOLUCIO_OPTS.unshift('');arr=RESOLUCIO_OPTS;}
+  renderLlistes();render();renderRequerimentsTable();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
 
@@ -1004,13 +1015,11 @@ function selReqEstat(r){
   const label=r.estat||'N/A';
   if(!isMasterActive())return `<div style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
   const style=bg?` style="background:${bg};color:${fg}"`:'';
-  const opts=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','RESOLT','OTORGAT','No aplica'];
-  return `<select${style} onchange="svsReq(${r.id},'estat',this.value)">${opts.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'N/A'}</option>`).join('')}</select>`;
+  return `<select${style} onchange="svsReq(${r.id},'estat',this.value)">${REQ_ESTAT_OPTS.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'N/A'}</option>`).join('')}</select>`;
 }
 function selResolucioFinal(r){
   if(!isMasterActive())return `<span>${r.resolucio_final||''}</span>`;
-  const opts=['','CONCEDIT','RESOLT','INADMISSIÓ','REFUSAT'];
-  return `<select onchange="svsReqResolucio(${r.id},this.value)">${opts.map(o=>`<option value="${o}"${r.resolucio_final===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
+  return `<select onchange="svsReqResolucio(${r.id},this.value)">${RESOLUCIO_OPTS.map(o=>`<option value="${o}"${r.resolucio_final===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
 }
 async function svsReqResolucio(id,val){
   const r=REQ.find(x=>x.id===id); if(!r)return;
@@ -1325,6 +1334,9 @@ async function init(){
     if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.qw)QW=lists.qw;
     if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
     if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
+    if(lists.otorgat)OTORGAT_OPTS=lists.otorgat;
+    if(lists.reqestat)REQ_ESTAT_OPTS=lists.reqestat;
+    if(lists.resolucio)RESOLUCIO_OPTS=lists.resolucio;
     pins=pinMap;
     rebuildRoleBtns();render();
   }catch(e){
@@ -1471,13 +1483,16 @@ setInterval(async()=>{
     let changed=false;
     if(pw&&pw!==ADMIN_PW_MASTER){ADMIN_PW_MASTER=pw;}
     if(JSON.stringify(pinMap)!==JSON.stringify(pins)){pins=pinMap;changed=true;}
-    const curLists={g:G,t:T,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH};
+    const curLists={g:G,t:T,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH,otorgat:OTORGAT_OPTS,reqestat:REQ_ESTAT_OPTS,resolucio:RESOLUCIO_OPTS};
     Object.keys(curLists).forEach(k=>{
       if(lists[k]&&JSON.stringify(lists[k])!==JSON.stringify(curLists[k]))changed=true;
     });
     if(lists.g)G=lists.g; if(lists.t)T=lists.t; if(lists.qw)QW=lists.qw;
     if(lists.c)CUPS=lists.c; if(lists.s)SITS=lists.s; if(lists.web)WEBLIST=lists.web;
     if(lists.tf3)TF3=lists.tf3; if(lists.tfh)TFH=lists.tfh;
-    if(changed)render();
+    if(lists.otorgat)OTORGAT_OPTS=lists.otorgat;
+    if(lists.reqestat)REQ_ESTAT_OPTS=lists.reqestat;
+    if(lists.resolucio)RESOLUCIO_OPTS=lists.resolucio;
+    if(changed){render();renderRequerimentsTable();}
   }catch(e){console.warn('Polling config error:',e);}
 },2000);

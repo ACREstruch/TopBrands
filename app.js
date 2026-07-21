@@ -49,7 +49,7 @@ const REQ_ESTAT_COLORS={
   'RESOLT':             {bg:'#8FD19E',fg:'#163d1f'},
   'OTORGAT':            {bg:'#A02B93',fg:'#fff'},
 };
-const RESOLUCIO_TO_ESTAT={'CONCEDIT':'OTORGAT','RESOLT':'RESOLT','REFUSAT':'PERDUT','INADMISSIÓ':'PERDUT'};
+const RESOLUCIO_TO_ESTAT={'':'','CONCEDIT':'OTORGAT','RESOLT':'RESOLT','REFUSAT':'PERDUT','INADMISSIÓ':'PERDUT'};
 const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padStart(2,'0')}:00`);if(i<15)h.push(`${String(i).padStart(2,'0')}:30`);}return h;})();
 
 let D=[];
@@ -1016,10 +1016,9 @@ async function svsReqResolucio(id,val){
   const r=REQ.find(x=>x.id===id); if(!r)return;
   r.resolucio_final=val;
   await updateRequerimentField(id,'resolucio_final',val);
-  const novEstat=RESOLUCIO_TO_ESTAT[val];
-  if(novEstat){
-    r.estat=novEstat;
-    await updateRequerimentField(id,'estat',novEstat);
+  if(val in RESOLUCIO_TO_ESTAT){
+    r.estat=RESOLUCIO_TO_ESTAT[val];
+    await updateRequerimentField(id,'estat',r.estat);
   }
   renderRequerimentsTable();
 }

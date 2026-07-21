@@ -399,17 +399,18 @@ function cupPresentatCounts(){
     return {l:c,n:D.filter(d=>d.presentat&&d.cup===c).length,bg:col.bg,fg:col.fg};
   });
 }
-function cupActiusRefusatsCounts(){
-  const out=[];
-  ['CEXP','PI','EC','IA'].forEach(c=>{
+function cupSiNoGroups(){
+  return ['CEXP','PI','EC','IA'].map(c=>{
     const col=CUP_COLORS[c];
-    const total=D.filter(d=>d.presentat&&d.cup===c);
-    const refusats=total.filter(d=>d.otorgat==='NO').length;
-    const actius=total.length-refusats;
-    out.push({l:c,n:actius,bg:col.bg,fg:col.fg});
-    out.push({l:c+' REFUSATS',n:refusats,bg:'#808080',fg:'#fff'});
+    const rows=D.filter(d=>d.presentat&&d.cup===c);
+    const si=rows.filter(d=>d.otorgat==='SI').length;
+    const no=rows.filter(d=>d.otorgat==='NO').length;
+    return [
+      {l:c,n:rows.length,bg:col.bg,fg:col.fg},
+      {l:'SI',n:si,bg:OTORGAT_ESTAT.SI.bg,fg:OTORGAT_ESTAT.SI.fg},
+      {l:'NO',n:no,bg:OTORGAT_ESTAT.NO.bg,fg:OTORGAT_ESTAT.NO.fg},
+    ];
   });
-  return out;
 }
 function renderComercial(){
   let rows=D.filter(d=>d.presentat);
@@ -420,7 +421,7 @@ function renderComercial(){
   const rcEl=document.getElementById('recomptes-comercial');
   if(rcEl)rcEl.innerHTML=comOtorgatCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
   const rcCupEl=document.getElementById('recomptes-cupo-comercial');
-  if(rcCupEl)rcCupEl.innerHTML=cupActiusRefusatsCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+  if(rcCupEl)rcCupEl.innerHTML=cupSiNoGroups().map(g=>`<div class="cup-group">${g.map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n||'—'}</span><span class="rc-l">${r.l}</span></div>`).join('')}</div>`).join('');
   const novesComCount=D.filter(d=>d.presentat&&d.nova).length;
   const rcNovaEl=document.getElementById('recomptes-nova-comercial');
   if(rcNovaEl)rcNovaEl.innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesComCount}</span><span class="rc-l">NOVES</span></div>`;

@@ -30,7 +30,6 @@ input,select,button{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;}
 .grp{background:#f9f9f9;border:1px solid #ddd;border-radius:5px;padding:6px 10px;}
 .filter-grp{min-width:420px;}
 .recompte-grp{min-width:340px;}
-.nova-grp{width:140px;}
 .nova-grp .rcomp{width:100%;}
 .nova-grp #btnNova{width:100%;}
 
@@ -262,17 +261,17 @@ html{scroll-behavior:smooth;}
 
 <!-- ═══════════════ PESTANYES ═══════════════ -->
 <div class="tabs">
-  <button class="tab-btn active" onclick="showTab('bbdd')">📋 BBDD</button>
+  <button class="tab-btn active" onclick="showTab('manual')">📘 Manual</button>
+  <button class="tab-btn" onclick="showTab('bbdd')">📋 BBDD</button>
   <button class="tab-btn" onclick="showTab('comercial')">💼 Comercial</button>
   <button class="tab-btn" onclick="showTab('sch-tickets')">🕐 Schedule — Tickets</button>
   <button class="tab-btn" onclick="showTab('sch-cupo')">🏷️ Schedule — Cupó</button>
   <button class="tab-btn" onclick="showTab('requeriments')">📄 Requeriments</button>
   <button class="tab-btn" onclick="showTab('tipus')">📚 FAQs</button>
-  <button class="tab-btn" onclick="showTab('manual')">📘 Manual</button>
 </div>
 
 <!-- ═══════════════ TAB BBDD ═══════════════ -->
-<div id="tab-bbdd" class="tab-content active">
+<div id="tab-bbdd" class="tab-content">
 
   <div class="top-row">
 
@@ -426,6 +425,9 @@ html{scroll-behavior:smooth;}
     <div class="grp recompte-grp">
       <div class="recompte-inner" id="recomptes-comercial"></div>
     </div>
+    <div class="grp nova-grp">
+      <div class="recompte-inner" id="recomptes-nova-comercial"></div>
+    </div>
     <div class="grp filter-grp">
       <div class="filter-row">
         <div class="fi"><label>Otorgat</label>
@@ -548,7 +550,7 @@ html{scroll-behavior:smooth;}
 </div>
 
 <!-- ═══════════════ TAB MANUAL D'ÚS ═══════════════ -->
-<div id="tab-manual" class="tab-content">
+<div id="tab-manual" class="tab-content active">
   <div class="man-layout">
     <nav class="man-nav">
       <div class="man-nav-title">CONTINGUTS</div>
@@ -568,7 +570,7 @@ html{scroll-behavior:smooth;}
         <p><b>Accés:</b> el portal és accessible des del navegador (funciona amb <span class="man-badge">GitHub Pages</span>, cal connexió a internet). No cal usuari/contrasenya per consultar les dades en mode lectura; per editar cal identificar-te amb el teu nom de rol (KAM, Tramitador, Presentador, Gestor Web, Gestor Hora) des dels botons de la part superior, o entrar com a Admin/Master des del botó <b>☰ Admin</b>.</p>
         <div class="man-tip">💡 Alguns rols (Tramitador, Presentador, Gestor Web, Gestor Hora) poden requerir un PIN la primera vegada que els selecciones en cada sessió del navegador.</div>
         <h3>Navegació general</h3>
-        <p>La barra superior de pestanyes dona accés als diferents mòduls: <b>BBDD</b>, <b>Comercial</b>, <b>Schedule — Tickets</b>, <b>Schedule — Cupó</b>, <b>Requeriments</b>, <b>FAQs</b> i aquest <b>Manual</b>. La pestanya activa es marca en blau.</p>
+        <p>La barra superior de pestanyes dona accés als diferents mòduls: aquest <b>Manual</b> (pestanya d'inici), <b>BBDD</b>, <b>Comercial</b>, <b>Schedule — Tickets</b>, <b>Schedule — Cupó</b>, <b>Requeriments</b> i <b>FAQs</b>. La pestanya activa es marca en blau.</p>
         <p>Moltes columnes es poden filtrar (Cupó, Estat, Otorgat...) i cercar per text (empresa, contacte). A les taules amb moltes columnes, les primeres (KAM, Empresa...) queden fixes en fer scroll horitzontal perquè sempre sàpigues de quina empresa es tracta.</p>
       </section>
 

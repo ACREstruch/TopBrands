@@ -386,6 +386,9 @@ function renderComercial(){
   if(tbody)tbody.innerHTML=rows.map(comRowHtml).join('');
   const rcEl=document.getElementById('recomptes-comercial');
   if(rcEl)rcEl.innerHTML=comOtorgatCounts().map(r=>`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
+  const novesComCount=D.filter(d=>d.presentat&&d.nova).length;
+  const rcNovaEl=document.getElementById('recomptes-nova-comercial');
+  if(rcNovaEl)rcNovaEl.innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesComCount}</span><span class="rc-l">NOVES</span></div>`;
   requestAnimationFrame(()=>updateNotesToggles('#com-table-wrap'));
 }
 
@@ -458,7 +461,7 @@ function render(){
   document.getElementById('recomptes').innerHTML=rc.map(r=>r.gap?`<div style="width:18px"></div>`:`<div class="rcomp" style="background:${r.bg};color:${r.fg}"><span class="rc-n">${r.n}</span><span class="rc-l">${r.l}</span></div>`).join('');
 
   const novesCount=D.filter(d=>d.nova).length;
-  document.getElementById('recomptes-nova').innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesCount}</span><span class="rc-l">EMPRESES NOVES</span></div>`;
+  document.getElementById('recomptes-nova').innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesCount}</span><span class="rc-l">NOVES</span></div>`;
 
   // Actualitzar selectors filtres
   const fcs=document.getElementById('fCupSel');
@@ -600,7 +603,7 @@ document.addEventListener('click',()=>document.querySelectorAll('.sit-drop.open,
    7. PESTANYES
 ═══════════════════════════════════════════════ */
 function showTab(id){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','comercial','sch-tickets','sch-cupo','requeriments','tipus','manual'][i]===id));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['manual','bbdd','comercial','sch-tickets','sch-cupo','requeriments','tipus'][i]===id));
   document.querySelectorAll('.tab-content').forEach(d=>d.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
   if(id==='comercial')renderComercial();
@@ -1393,7 +1396,7 @@ async function svIta(id,val){
 
 init();
 
-// ── POLLING: actualitza dades cada 5 segons ──
+// ── POLLING: actualitza dades cada 2 segons ──
 setInterval(async()=>{
   // No actualitzar si l'usuari està editant activament o té un desplegable obert
   if(document.activeElement&&document.activeElement.classList.contains('ed'))return;

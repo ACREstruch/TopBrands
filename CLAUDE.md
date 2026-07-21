@@ -73,6 +73,16 @@ pujat correctament a GitHub (o avisa clarament si el push ha fallat).
   URLs públiques:
   `https://acrestruch.github.io/TopBrands/bbdd_cupons_TB_2026.html`
   `https://acrestruch.github.io/TopBrands/bbdd_cupons_TB_2027.html`
+- **Pestanya "Manual"** (primera pestanya, és la d'inici — `id="tab-manual"`):
+  documentació d'ús de l'aplicació per als usuaris finals, amb navegació
+  lateral per seccions (Introducció, BBDD, Comercial, Schedule, Requeriments,
+  FAQs, Preguntes freqüents). És contingut estàtic idèntic entre
+  `bbdd_cupons_TB_2026.html` i `bbdd_cupons_TB_2027.html` (cal duplicar-hi
+  qualsevol canvi als dos fitxers, com amb la resta d'HTML). **Sempre que
+  facis un canvi que afecti el funcionament o la interfície de l'app
+  (columnes noves, camps renombrats, comportaments nous...), actualitza
+  també el text corresponent d'aquesta pestanya en el mateix commit**,
+  perquè no es desactualitzi respecte al que veu l'usuari.
 
 ## Estil de treball
 - L'usuari (Jaume) treballa en català. Respon sempre en català.

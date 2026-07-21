@@ -230,6 +230,32 @@ thead tr:nth-child(2) th{top:28px;}
 .sch-checks{display:flex;gap:10px;margin-top:4px;font-size:8.5pt;color:#444;align-items:center;flex-wrap:wrap;}
 .sch-checks label{cursor:pointer;display:flex;align-items:center;gap:3px;}
 .sch-sep{border:none;border-top:1px solid #eee;margin:5px 0;}
+
+/* ═══════════════════════════════════════
+   MANUAL D'ÚS
+═══════════════════════════════════════ */
+html{scroll-behavior:smooth;}
+.man-layout{display:flex;align-items:flex-start;gap:0;max-height:calc(100vh - 90px);overflow:hidden;}
+.man-nav{width:220px;flex-shrink:0;border-right:1px solid #e2e2e2;padding:14px 12px;align-self:stretch;overflow-y:auto;background:#fafbfd;}
+.man-nav-title{font-size:8pt;font-weight:bold;color:#888;letter-spacing:.5px;margin-bottom:8px;padding-left:10px;}
+.man-nav a{display:block;padding:6px 10px;border-radius:5px;color:#444;text-decoration:none;font-size:9.5pt;margin-bottom:2px;}
+.man-nav a:hover{background:#eef2fa;color:#2c5aa0;}
+.man-content{flex:1;padding:16px 28px;max-width:920px;overflow-y:auto;max-height:calc(100vh - 90px);}
+.man-section{margin-bottom:36px;padding-top:4px;scroll-margin-top:12px;}
+.man-section h2{display:flex;align-items:center;gap:9px;font-size:14pt;color:#2c5aa0;border-bottom:1px solid #eee;padding-bottom:9px;margin-bottom:12px;}
+.man-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:#EEF2FA;border-radius:8px;font-size:14pt;flex-shrink:0;}
+.man-section h3{font-size:10.5pt;margin:18px 0 6px;color:#222;}
+.man-section p{font-size:9.5pt;color:#333;line-height:1.55;margin-bottom:8px;}
+.man-section ul{font-size:9.5pt;color:#333;line-height:1.6;margin:6px 0 10px 20px;}
+.man-tip{background:#EEF2FA;border-left:3px solid #2c5aa0;border-radius:4px;padding:10px 14px;margin:12px 0;font-size:9pt;color:#333;display:flex;gap:8px;align-items:flex-start;}
+.man-warn{background:#FDEDEC;border-left:3px solid #c0392b;border-radius:4px;padding:10px 14px;margin:12px 0;font-size:9pt;color:#333;display:flex;gap:8px;align-items:flex-start;}
+.man-steps{counter-reset:step;list-style:none;padding-left:0;margin:8px 0 14px;}
+.man-steps li{counter-increment:step;position:relative;padding-left:32px;margin-bottom:9px;font-size:9.5pt;color:#333;line-height:1.4;}
+.man-steps li::before{content:counter(step);position:absolute;left:0;top:0;width:21px;height:21px;background:#2c5aa0;color:#fff;border-radius:50%;text-align:center;line-height:21px;font-size:8.5pt;font-weight:bold;}
+.man-faq{border:1px solid #eee;border-radius:6px;padding:12px 14px;margin-bottom:10px;}
+.man-faq p{font-weight:bold;color:#2c5aa0;margin-bottom:4px;font-size:9.5pt;}
+.man-faq div{font-size:9.5pt;color:#333;line-height:1.5;}
+.man-badge{display:inline-block;background:#EEF2FA;color:#2c5aa0;border-radius:3px;padding:1px 7px;font-size:8.5pt;font-weight:bold;}
 </style>
 </head>
 <body>
@@ -242,6 +268,7 @@ thead tr:nth-child(2) th{top:28px;}
   <button class="tab-btn" onclick="showTab('sch-cupo')">🏷️ Schedule — Cupó</button>
   <button class="tab-btn" onclick="showTab('requeriments')">📄 Requeriments</button>
   <button class="tab-btn" onclick="showTab('tipus')">📚 FAQs</button>
+  <button class="tab-btn" onclick="showTab('manual')">📘 Manual</button>
 </div>
 
 <!-- ═══════════════ TAB BBDD ═══════════════ -->
@@ -517,6 +544,113 @@ thead tr:nth-child(2) th{top:28px;}
       </thead>
       <tbody id="tipus-tbody"></tbody>
     </table>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB MANUAL D'ÚS ═══════════════ -->
+<div id="tab-manual" class="tab-content">
+  <div class="man-layout">
+    <nav class="man-nav">
+      <div class="man-nav-title">CONTINGUTS</div>
+      <a href="#man-intro">📖 Introducció</a>
+      <a href="#man-bbdd">📋 BBDD</a>
+      <a href="#man-comercial">💼 Comercial</a>
+      <a href="#man-schedule">🕐 Schedule</a>
+      <a href="#man-requeriments">📄 Requeriments</a>
+      <a href="#man-faqs">📚 FAQs (catàleg)</a>
+      <a href="#man-pf">❓ Preguntes freqüents</a>
+    </nav>
+    <div class="man-content">
+
+      <section class="man-section" id="man-intro">
+        <h2><span class="man-icon">📖</span> Introducció</h2>
+        <p><b>TopBrands</b> és el portal de gestió de la campanya de cupons d'internacionalització ACCIÓ. Centralitza tot el recorregut d'una empresa: des de la captació comercial fins a la tramitació de la fitxa, la presentació del dia D i el seguiment dels requeriments posteriors.</p>
+        <p><b>Accés:</b> el portal és accessible des del navegador (funciona amb <span class="man-badge">GitHub Pages</span>, cal connexió a internet). No cal usuari/contrasenya per consultar les dades en mode lectura; per editar cal identificar-te amb el teu nom de rol (KAM, Tramitador, Presentador, Gestor Web, Gestor Hora) des dels botons de la part superior, o entrar com a Admin/Master des del botó <b>☰ Admin</b>.</p>
+        <div class="man-tip">💡 Alguns rols (Tramitador, Presentador, Gestor Web, Gestor Hora) poden requerir un PIN la primera vegada que els selecciones en cada sessió del navegador.</div>
+        <h3>Navegació general</h3>
+        <p>La barra superior de pestanyes dona accés als diferents mòduls: <b>BBDD</b>, <b>Comercial</b>, <b>Schedule — Tickets</b>, <b>Schedule — Cupó</b>, <b>Requeriments</b>, <b>FAQs</b> i aquest <b>Manual</b>. La pestanya activa es marca en blau.</p>
+        <p>Moltes columnes es poden filtrar (Cupó, Estat, Otorgat...) i cercar per text (empresa, contacte). A les taules amb moltes columnes, les primeres (KAM, Empresa...) queden fixes en fer scroll horitzontal perquè sempre sàpigues de quina empresa es tracta.</p>
+      </section>
+
+      <section class="man-section" id="man-bbdd">
+        <h2><span class="man-icon">📋</span> BBDD</h2>
+        <p>La pestanya <b>BBDD</b> és la taula principal: un registre per empresa/cupó, amb tot el recorregut de tramitació organitzat en blocs de color.</p>
+        <h3>Blocs de columnes</h3>
+        <ul>
+          <li><b>Identificació:</b> KAM, Empresa, Nova, Cupó anterior, Cupó, Contacte, Mòbil, eMail, Entrada.</li>
+          <li><b>Estat LEAD:</b> l'estat del registre (POTENCIAL, PROCÉS, COMPLETAT, HO DESCARTA, FA COMPE, NO COMPLEIX, NUL). Es canvia clicant la pastilla de color i triant una opció del desplegable. No es pot marcar COMPLETAT ni PROCÉS sense tenir la data d'Entrada omplerta.</li>
+          <li><b>PREPARACIÓ FITXA</b> (blau): Ticket, Omplir Fitxa (Qui/Data), HOLDED, Verificar Fitxa (Qui/Data), ITA (només cupó IA).</li>
+          <li><b>WEB</b> (blau): Qui gestiona la web, si en té, URL web inicial i URL web final.</li>
+          <li><b>VALIDACIÓ</b> i <b>HORA</b> (blau): Qui valida la fitxa i quina hora de presentació té assignada.</li>
+          <li><b>TRAMITACIÓ DIA-D</b> (blau): Presentador assignat, si ja s'ha Presentat i si el Resguard ha quedat Arxivat.</li>
+          <li><b>Notes BBDD:</b> notes lliures, amb alçada limitada i botó "+" per veure-les senceres.</li>
+        </ul>
+        <div class="man-tip">💡 Un registre passa automàticament a COMPLETAT quan Omplir/Verificar Fitxa, HOLDED i (si aplica) l'ITA estan tots fets.</div>
+        <h3>Rajoles de recompte i filtres</h3>
+        <p>A dalt de la taula hi ha comptadors ràpids (Registres, Procés, Potencials, Completats, Otorgats, Refusats, Pendents, Requerits...) i filtres per Cupó, Estat, cerca de text i botons "WEB Pendent" / "HORA Pendent".</p>
+        <h3>Panell Admin (☰ Admin)</h3>
+        <p>Des del botó <b>☰ Admin</b> el Master pot gestionar les llistes desplegables (KAM, Equip, Cupons, Estats, etc.), donar d'alta/baixa Admins ajudants amb contrasenya pròpia, i canviar la contrasenya Master.</p>
+      </section>
+
+      <section class="man-section" id="man-comercial">
+        <h2><span class="man-icon">💼</span> Comercial</h2>
+        <p>La pestanya <b>Comercial</b> mostra, una fila per empresa, el seguiment comercial de les empreses que ja han estat <b>Presentades</b> a BBDD (s'omple sola, per ordre de Ticket — no es creen ni s'esborren files manualment aquí).</p>
+        <h3>Camps</h3>
+        <ul>
+          <li><b>KAM, Empresa, Nova, Cupó:</b> només lectura, venen de BBDD.</li>
+          <li><b>Otorgat:</b> SI / NO / REQUERIT — es pinta de color (SI en lila, NO en gris, REQUERIT en rosa).</li>
+          <li><b>Procés comercial previ</b> i <b>Requeriment:</b> caselles que es ressalten de color quan estan marcades. "Requeriment" es marca i desmarca sola en crear o eliminar un requeriment d'aquella empresa a la pestanya Requeriments.</li>
+          <li><b>Primer contacte, Proposta presentada, Proposta enviada, Kick-off:</b> dates (format DD/MM/AA).</li>
+          <li><b>Acceptada:</b> casella simple.</li>
+          <li><b>Notes comercial:</b> igual que Notes BBDD però amb el doble d'amplada.</li>
+        </ul>
+        <div class="man-tip">💡 Les rajoles de dalt (Completats/Otorgats/Refusats/Pendents/Requerits) i el filtre "Otorgat" són els mateixos que a BBDD.</div>
+      </section>
+
+      <section class="man-section" id="man-schedule">
+        <h2><span class="man-icon">🕐</span> Schedule — Tickets i Schedule — Cupó</h2>
+        <p>Dues graelles del dia de presentació, amb les hores en files. <b>Schedule — Tickets</b> organitza les columnes per Presentador; <b>Schedule — Cupó</b> per tipus de cupó (CEXP/PI/EC/IA). Només hi apareixen els registres <b>COMPLETAT</b> amb hora assignada.</p>
+        <p>Cada cel·la mostra el Ticket, l'Empresa i el Cupó, amb dues caselles ràpides: <b>Presentat</b> i <b>Arxivat</b> (Resguard), editables pel Master o pel Presentador assignat a aquell registre.</p>
+      </section>
+
+      <section class="man-section" id="man-requeriments">
+        <h2><span class="man-icon">📄</span> Requeriments</h2>
+        <p>Seguiment dels requeriments d'ACCIÓ posteriors a la presentació, un per fila. Només es poden crear requeriments sobre registres <b>COMPLETAT</b> de BBDD.</p>
+        <h3>Crear un requeriment</h3>
+        <ol class="man-steps">
+          <li>Clica <b>+ Nou requeriment</b>.</li>
+          <li>Tria l'empresa/cupó a la llista (identificada pel número de Ticket).</li>
+          <li>Clica <b>Crear</b>. El requeriment apareix a la taula i, automàticament, la casella "Requeriment" d'aquella empresa a Comercial queda marcada.</li>
+        </ol>
+        <h3>Camps destacats</h3>
+        <ul>
+          <li><b>Tipus:</b> etiquetes del catàleg (vegeu FAQs); clica-hi per afegir-ne o treure'n.</li>
+          <li><b>Aclariment tècnic, Comentaris Back Office, Comentaris KAM:</b> text llarg amb alçada limitada i botó "+" per expandir.</li>
+          <li><b>Estat requeriment:</b> N/A, Pendent presentació, Presentat, Perdut, No aplica — es pinta de color.</li>
+          <li><b>TODO:</b> casella que es ressalta en vermell mentre estigui marcada, per fer-te un recordatori independent de l'estat.</li>
+          <li><b>Dead line, Data presentació, Data resolució:</b> dates en format DD/MM/AA.</li>
+        </ul>
+        <div class="man-tip">💡 Les columnes Empresa, Tiquet, Cupó i Expedient queden fixes en fer scroll horitzontal.</div>
+        <div class="man-warn">⚠️ Eliminar un requeriment (botó ×) és permanent i desmarca sola la casella "Requeriment" a Comercial si era l'últim requeriment obert d'aquella empresa.</div>
+      </section>
+
+      <section class="man-section" id="man-faqs">
+        <h2><span class="man-icon">📚</span> FAQs — Catàleg de tipus de requeriment</h2>
+        <p>Aquesta pestanya és el catàleg compartit (entre totes les campanyes) dels <b>tipus de requeriment</b> que es poden assignar des de la pestanya Requeriments: àlies, la pregunta/requeriment tal com el fa ACCIÓ, un comentari o aclariment intern, i un recurs (nom + enllaç) per si cal adjuntar una plantilla o document de referència.</p>
+      </section>
+
+      <section class="man-section" id="man-pf">
+        <h2><span class="man-icon">❓</span> Preguntes freqüents</h2>
+        <div class="man-faq"><p>Per què no puc marcar un registre com a COMPLETAT?</p><div>Cal que tinguis la data d'Entrada omplerta, i que Omplir/Verificar Fitxa, HOLDED i l'ITA (si el cupó és IA) estiguin tots fets.</div></div>
+        <div class="man-faq"><p>He canviat l'Estat però la fila ha desaparegut.</p><div>Segurament s'ha mogut a un grup que està plegat (per exemple "HO DESCARTA" o "PROCÉS"). Busca la capçalera del grup a la taula i clica-la per desplegar-lo.</div></div>
+        <div class="man-faq"><p>Per què no veig una empresa a la pestanya Comercial?</p><div>Comercial només mostra empreses amb "Presentat" marcat a BBDD. Un cop es marqui, hi apareixerà automàticament ordenada per Ticket.</div></div>
+        <div class="man-faq"><p>Com faig que una empresa surti com a "Requerida" a Comercial?</p><div>No es marca a mà: crea un requeriment per aquella empresa des de la pestanya Requeriments i la casella es marcarà sola.</div></div>
+        <div class="man-faq"><p>El desplegable d'Estat es tanca sol abans de poder triar l'opció.</p><div>El portal es sincronitza cada 5 segons amb els altres usuaris; si tens un desplegable obert, espera que el tanquis abans de refrescar. Si continua passant, recarrega la pàgina.</div></div>
+        <div class="man-faq"><p>Puc recuperar un registre o requeriment eliminat per error?</p><div>L'eliminació és permanent des del portal. Contacta amb l'administrador per si es pot restaurar des d'una còpia de la base de dades.</div></div>
+        <div class="man-faq"><p>El portal va lent o no carrega.</p><div>Prova a recarregar la pàgina (F5 o Ctrl+R). Si el problema persisteix, neteja la caché del navegador o contacta amb l'administrador.</div></div>
+      </section>
+
+    </div>
   </div>
 </div>
 

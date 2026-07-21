@@ -600,7 +600,7 @@ document.addEventListener('click',()=>document.querySelectorAll('.sit-drop.open,
    7. PESTANYES
 ═══════════════════════════════════════════════ */
 function showTab(id){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','comercial','sch-tickets','sch-cupo','requeriments','tipus'][i]===id));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bbdd','comercial','sch-tickets','sch-cupo','requeriments','tipus','manual'][i]===id));
   document.querySelectorAll('.tab-content').forEach(d=>d.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
   if(id==='comercial')renderComercial();

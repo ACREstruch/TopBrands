@@ -434,10 +434,7 @@ html{scroll-behavior:smooth;}
 
 <!-- ═══════════════ TAB COMERCIAL ═══════════════ -->
 <div id="tab-comercial" class="tab-content">
-  <div class="hint" id="com-hint" style="display:flex;align-items:center;gap:8px;justify-content:space-between">
-    <span>Empreses amb 'Presentat' marcat a BBDD — ordenades per Ticket.</span>
-    <button class="btn-action" onclick="exportComercial(event)" title="Exportar a Excel">⬇ Exportar</button>
-  </div>
+  <div class="hint" id="com-hint">Empreses amb 'Presentat' marcat a BBDD — ordenades per Ticket.</div>
   <div class="top-row">
     <div class="grp recompte-grp">
       <div class="recompte-inner" id="recomptes-comercial"></div>
@@ -445,6 +442,9 @@ html{scroll-behavior:smooth;}
     </div>
     <div class="grp nova-grp">
       <div class="recompte-inner" id="recomptes-nova-comercial"></div>
+      <div class="nova-row">
+        <button class="btn-action" onclick="exportComercial(event)" title="Exportar a Excel">⬇ Exportar</button>
+      </div>
     </div>
     <div class="grp filter-grp">
       <div class="filter-row">

@@ -46,12 +46,18 @@ const OTORGAT_ESTAT={
 };
 const REQ_ESTAT_COLORS={
   'PENDENT PRESENTACIÓ':{bg:'#FFD966',fg:'#3d2b00'},
-  'PRESENTAT':          {bg:'#8FD19E',fg:'#163d1f'},
+  'PRESENTAT':          {bg:'#C1F0C8',fg:'#163d1f'},
   'PERDUT':             {bg:'#EA9999',fg:'#4a0000'},
-  'RESOLT':             {bg:'#8FD19E',fg:'#163d1f'},
+  'RESOLT':             {bg:'#00B050',fg:'#fff'},
   'OTORGAT':            {bg:'#A02B93',fg:'#fff'},
 };
 const RESOLUCIO_TO_ESTAT={'':'','CONCEDIT':'OTORGAT','RESOLT':'RESOLT','REFUSAT':'PERDUT','INADMISSIÓ':'PERDUT'};
+const RESOLUCIO_COLORS={
+  'CONCEDIT':  {bg:'#00B050',fg:'#fff'},
+  'RESOLT':    {bg:'#00B050',fg:'#fff'},
+  'INADMISSIÓ':{bg:'#EA9999',fg:'#4a0000'},
+  'REFUSAT':   {bg:'#EA9999',fg:'#4a0000'},
+};
 let REQ_ESTAT_OPTS=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','RESOLT','OTORGAT','No aplica'];
 let RESOLUCIO_OPTS=['','CONCEDIT','RESOLT','INADMISSIÓ','REFUSAT'];
 const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padStart(2,'0')}:00`);if(i<15)h.push(`${String(i).padStart(2,'0')}:30`);}return h;})();
@@ -1044,8 +1050,11 @@ function selReqEstat(r){
   return `<select${style} onchange="svsReq(${r.id},'estat',this.value)">${REQ_ESTAT_OPTS.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'N/A'}</option>`).join('')}</select>`;
 }
 function selResolucioFinal(r){
-  if(!isMasterActive())return `<span>${r.resolucio_final||''}</span>`;
-  return `<select onchange="svsReqResolucio(${r.id},this.value)">${RESOLUCIO_OPTS.map(o=>`<option value="${o}"${r.resolucio_final===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
+  const c=RESOLUCIO_COLORS[r.resolucio_final]||{};
+  const bg=c.bg||'',fg=c.fg||'#222';
+  if(!isMasterActive())return `<span style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${r.resolucio_final||''}</span>`;
+  const style=bg?` style="background:${bg};color:${fg}"`:'';
+  return `<select${style} onchange="svsReqResolucio(${r.id},this.value)">${RESOLUCIO_OPTS.map(o=>`<option value="${o}"${r.resolucio_final===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
 }
 async function svsReqResolucio(id,val){
   const r=REQ.find(x=>x.id===id); if(!r)return;

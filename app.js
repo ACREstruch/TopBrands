@@ -1045,16 +1045,16 @@ function selReqEstat(r){
   const c=REQ_ESTAT_COLORS[r.estat]||{};
   const bg=c.bg||'',fg=c.fg||'#222';
   const label=r.estat||'N/A';
-  if(!isMasterActive())return `<div style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
+  if(!isMasterActive())return `<div class="sel-small" style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${label}</div>`;
   const style=bg?` style="background:${bg};color:${fg}"`:'';
-  return `<select${style} onchange="svsReq(${r.id},'estat',this.value)">${REQ_ESTAT_OPTS.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'N/A'}</option>`).join('')}</select>`;
+  return `<select class="sel-small"${style} onchange="svsReq(${r.id},'estat',this.value)">${REQ_ESTAT_OPTS.map(o=>`<option value="${o}"${r.estat===o?' selected':''}>${o||'N/A'}</option>`).join('')}</select>`;
 }
 function selResolucioFinal(r){
   const c=RESOLUCIO_COLORS[r.resolucio_final]||{};
   const bg=c.bg||'',fg=c.fg||'#222';
-  if(!isMasterActive())return `<span style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${r.resolucio_final||''}</span>`;
+  if(!isMasterActive())return `<span class="sel-small" style="background:${bg};color:${fg};padding:2px 4px;border-radius:3px">${r.resolucio_final||''}</span>`;
   const style=bg?` style="background:${bg};color:${fg}"`:'';
-  return `<select${style} onchange="svsReqResolucio(${r.id},this.value)">${RESOLUCIO_OPTS.map(o=>`<option value="${o}"${r.resolucio_final===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
+  return `<select class="sel-small"${style} onchange="svsReqResolucio(${r.id},this.value)">${RESOLUCIO_OPTS.map(o=>`<option value="${o}"${r.resolucio_final===o?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
 }
 async function svsReqResolucio(id,val){
   const r=REQ.find(x=>x.id===id); if(!r)return;

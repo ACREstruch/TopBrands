@@ -452,15 +452,21 @@ html{scroll-behavior:smooth;}
             <option value="REQUERIT">REQUERIT</option>
           </select>
         </div>
-        <div class="fi"><label>Pendents de</label>
+        <div class="fi"><label>Filtrar per camp</label>
           <select id="fComPendentSel" onchange="fComPendent=this.value;renderComercial()">
             <option value="">Tots</option>
-            <option value="proc_comercial_previ">Procés comercial previ</option>
-            <option value="primer_contacte">Primer contacte</option>
-            <option value="proposta_presentada">Proposta presentada</option>
-            <option value="proposta_enviada">Proposta enviada</option>
-            <option value="oferta_acceptada">Acceptada</option>
-            <option value="kickoff_esperat">Kick-off</option>
+            <option value="proc_comercial_previ:pendent">Procés comercial previ — Pendent</option>
+            <option value="proc_comercial_previ:complet">Procés comercial previ — Complet</option>
+            <option value="primer_contacte:pendent">Primer contacte — Pendent</option>
+            <option value="primer_contacte:complet">Primer contacte — Complet</option>
+            <option value="proposta_presentada:pendent">Proposta presentada — Pendent</option>
+            <option value="proposta_presentada:complet">Proposta presentada — Complet</option>
+            <option value="proposta_enviada:pendent">Proposta enviada — Pendent</option>
+            <option value="proposta_enviada:complet">Proposta enviada — Complet</option>
+            <option value="oferta_acceptada:pendent">Acceptada — Pendent</option>
+            <option value="oferta_acceptada:complet">Acceptada — Complet</option>
+            <option value="kickoff_esperat:pendent">Kick-off — Pendent</option>
+            <option value="kickoff_esperat:complet">Kick-off — Complet</option>
           </select>
         </div>
       </div>

@@ -422,7 +422,10 @@ function cupSiNoGroups(){
 function renderComercial(){
   let rows=D.filter(d=>d.presentat);
   if(fComOtor)rows=rows.filter(d=>d.otorgat===fComOtor);
-  if(fComPendent)rows=rows.filter(d=>!d[fComPendent]);
+  if(fComPendent){
+    const [pField,pStatus]=fComPendent.split(':');
+    rows=rows.filter(d=>pStatus==='complet'?!!d[pField]:!d[pField]);
+  }
   rows=rows.sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
   const tbody=document.getElementById('com-tbody');
   if(tbody)tbody.innerHTML=rows.map(comRowHtml).join('');

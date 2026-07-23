@@ -452,6 +452,17 @@ html{scroll-behavior:smooth;}
             <option value="REQUERIT">REQUERIT</option>
           </select>
         </div>
+        <div class="fi"><label>Pendents de</label>
+          <select id="fComPendentSel" onchange="fComPendent=this.value;renderComercial()">
+            <option value="">Tots</option>
+            <option value="proc_comercial_previ">Procés comercial previ</option>
+            <option value="primer_contacte">Primer contacte</option>
+            <option value="proposta_presentada">Proposta presentada</option>
+            <option value="proposta_enviada">Proposta enviada</option>
+            <option value="oferta_acceptada">Acceptada</option>
+            <option value="kickoff_esperat">Kick-off</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>

@@ -67,6 +67,7 @@ let nid=1;
 let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
 let fComOtor='';
+let fComPendent='';
 let notesExpanded=new Set();
 let reqNotesExpanded=new Set();
 let comNotesExpanded=new Set();
@@ -421,6 +422,7 @@ function cupSiNoGroups(){
 function renderComercial(){
   let rows=D.filter(d=>d.presentat);
   if(fComOtor)rows=rows.filter(d=>d.otorgat===fComOtor);
+  if(fComPendent)rows=rows.filter(d=>!d[fComPendent]);
   rows=rows.sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
   const tbody=document.getElementById('com-tbody');
   if(tbody)tbody.innerHTML=rows.map(comRowHtml).join('');

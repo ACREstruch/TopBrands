@@ -74,6 +74,58 @@ let comNotesExpanded=new Set();
 let collapsedGroups=new Set(['PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL','']);
 let REQ=[]; // requeriments carregats
 let REQ_TIPUS=[]; // catàleg de tipus de requeriment
+let lastBBDDRows=[]; // files (filtrades) mostrades a la taula BBDD, per exportar
+let lastComRows=[]; // files (filtrades) mostrades a la taula Comercial, per exportar
+let XLSXLib=null;
+async function loadXLSXLib(){
+  if(!XLSXLib)XLSXLib=await import('https://esm.sh/xlsx@0.18.5');
+  return XLSXLib;
+}
+async function exportSheet(filename,sheetName,header,dataRows){
+  const XLSX=await loadXLSXLib();
+  const ws=XLSX.utils.aoa_to_sheet([header,...dataRows]);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  XLSX.writeFile(wb,filename);
+}
+async function runExport(btn,fn){
+  if(!btn)return fn();
+  const orig=btn.textContent;
+  btn.disabled=true;btn.textContent='Exportant…';
+  try{await fn();}
+  catch(e){console.error(e);alert('No s\'ha pogut exportar l\'Excel.');}
+  finally{btn.disabled=false;btn.textContent=orig;}
+}
+function boolTxt(v){return v?'SI':'NO';}
+async function exportBBDD(ev){
+  await runExport(ev&&ev.target,async()=>{
+    const header=['KAM','Empresa','Nova','Cupó anterior','Cupó','Contacte','Mòbil','eMail','Entrada','Estat LEAD','Ticket','Omplir Fitxa - Qui','Omplir Fitxa - Data','HOLDED','Verificar Fitxa - Qui','Verificar Fitxa - Data','ITA','Web - Qui','Web','URL web inicial','URL web final','Validar Fitxa - Qui','Validar Fitxa - Data','Validar Hora - Qui','Validar Hora - Hora','Presentador','Presentat','Resguard arxivat','Notes BBDD'];
+    const data=lastBBDDRows.map(d=>[d.g,d.emp,boolTxt(d.nova),d.cup_ant,d.cup,d.cont,d.mob,d.email,d.reg,d.sit,d.tke,d.f1q,d.f1d,boolTxt(d.holded),d.f2q,d.f2d,d.ita,d.webq,d.web,d.url_web,d.url_web_check,d.f3q,d.f3d,d.fhq,d.hora,d.pres,boolTxt(d.presentat),boolTxt(d.resguard),d.notes]);
+    await exportSheet('BBDD_cupons.xlsx','BBDD',header,data);
+  });
+}
+async function exportComercial(ev){
+  await runExport(ev&&ev.target,async()=>{
+    const header=['KAM','Empresa','Nova','Cupó','Otorgat','Requeriment','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','Notes comercial'];
+    const data=lastComRows.map(d=>{
+      const reqs=REQ.filter(r=>r.cupo_id===d.id);
+      const latest=reqs.length?reqs.reduce((a,b)=>b.id>a.id?b:a):null;
+      return [d.g,d.emp,boolTxt(d.nova),d.cup,d.otorgat,latest?(latest.estat||''):'',boolTxt(d.proc_comercial_previ),d.primer_contacte,d.proposta_presentada,d.proposta_enviada,boolTxt(d.oferta_acceptada),d.kickoff_esperat,d.notes_comercial];
+    });
+    await exportSheet('Comercial_cupons.xlsx','Comercial',header,data);
+  });
+}
+async function exportRequeriments(ev){
+  await runExport(ev&&ev.target,async()=>{
+    const header=['Empresa','Tiquet','Cupó','Expedient','Tipus','Aclariment tècnic','Comentaris Back Office','Dead line','Estat requeriment','TODO','Data presentació','Comentaris KAM','Resolució final','Data resolució'];
+    const data=REQ.map(r=>{
+      const ids=parseTipusIds(r.tipus_ids);
+      const tipusNames=ids.map(tid=>{const t=REQ_TIPUS.find(x=>x.id===tid);return t?t.alies.split(',')[0]:'';}).filter(Boolean).join(', ');
+      return [r.c_emp,r.c_tke,r.c_cup,r.expedient,tipusNames,r.aclariment_tecnic,r.comentaris_backoffice,r.dead_line,r.estat,boolTxt(r.todo),r.data_presentacio,r.comentaris_kam,r.resolucio_final,r.data_resolucio];
+    });
+    await exportSheet('Requeriments_cupons.xlsx','Requeriments',header,data);
+  });
+}
 
 
 /* ═══════════════════════════════════════════════
@@ -427,6 +479,7 @@ function renderComercial(){
     rows=rows.filter(d=>pStatus==='complet'?!!d[pField]:!d[pField]);
   }
   rows=rows.sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
+  lastComRows=rows;
   const tbody=document.getElementById('com-tbody');
   if(tbody)tbody.innerHTML=rows.map(comRowHtml).join('');
   const rcEl=document.getElementById('recomptes-comercial');
@@ -527,9 +580,11 @@ function render(){
     {key:'',label:'Sense estat'},
   ];
   let tbodyHtml='';
+  lastBBDDRows=[];
   GROUP_DEFS.forEach(g=>{
     const groupRows=rows.filter(d=>d.sit===g.key);
     if(!groupRows.length)return;
+    lastBBDDRows.push(...groupRows);
     const collapsed=collapsedGroups.has(g.key);
     const sc=SIT_COLORS[g.key]||{bg:'#eee',fg:'#333'};
     tbodyHtml+=`<tr class="group-row"><td colspan="28" style="background:${sc.bg||'#eee'};color:${sc.fg||'#333'};cursor:pointer;font-weight:bold;padding:5px 8px" onclick="toggleGroup('${g.key}')">

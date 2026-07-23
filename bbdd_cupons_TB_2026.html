@@ -339,6 +339,7 @@ html{scroll-behavior:smooth;}
         <button class="btn-action" id="btn-nova" onclick="addRow()">+ Nova empresa</button>
         <button class="btn-action" id="btn-admin" onclick="togglePanel('admin')">☰ Admin</button>
         <button class="btn-action" id="btn-llistes" onclick="togglePanel('llistes')">☰ Llistes</button>
+        <button class="btn-action" onclick="exportBBDD(event)" title="Exportar a Excel">⬇ Exportar</button>
       </div>
     </div>
     <div class="grp recompte-grp">
@@ -433,7 +434,10 @@ html{scroll-behavior:smooth;}
 
 <!-- ═══════════════ TAB COMERCIAL ═══════════════ -->
 <div id="tab-comercial" class="tab-content">
-  <div class="hint" id="com-hint">Empreses amb 'Presentat' marcat a BBDD — ordenades per Ticket.</div>
+  <div class="hint" id="com-hint" style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+    <span>Empreses amb 'Presentat' marcat a BBDD — ordenades per Ticket.</span>
+    <button class="btn-action" onclick="exportComercial(event)" title="Exportar a Excel">⬇ Exportar</button>
+  </div>
   <div class="top-row">
     <div class="grp recompte-grp">
       <div class="recompte-inner" id="recomptes-comercial"></div>
@@ -522,6 +526,7 @@ html{scroll-behavior:smooth;}
     <div class="grp recompte-grp" id="req-actions-grp">
       <div class="nova-row">
         <button class="btn-action" id="btn-nou-req" onclick="addRequeriment()">+ Nou requeriment</button>
+        <button class="btn-action" onclick="exportRequeriments(event)" title="Exportar a Excel">⬇ Exportar</button>
       </div>
     </div>
   </div>
@@ -621,6 +626,7 @@ html{scroll-behavior:smooth;}
         <div class="man-tip">💡 Un registre passa automàticament a COMPLETAT quan Omplir/Verificar Fitxa, HOLDED i (si aplica) l'ITA estan tots fets.</div>
         <h3>Rajoles de recompte i filtres</h3>
         <p>A dalt de la taula hi ha comptadors ràpids (Registres, Procés, Potencials, Completats, Otorgats, Refusats, Pendents, Requerits...) i filtres per Cupó, Estat, cerca de text i botons "WEB Pendent" / "HORA Pendent".</p>
+        <p>El botó <b>⬇ Exportar</b> genera un Excel (.xlsx) amb les files que es veuen actualment a la taula (respectant els filtres aplicats).</p>
         <h3>Panell Admin (☰ Admin)</h3>
         <p>Des del botó <b>☰ Admin</b> el Master pot donar d'alta/baixa Admins ajudants amb contrasenya pròpia, i canviar la contrasenya Master.</p>
         <h3>Panell Llistes (☰ Llistes)</h3>
@@ -641,6 +647,7 @@ html{scroll-behavior:smooth;}
           <li><b>Notes comercial:</b> igual que Notes BBDD però més ampla.</li>
         </ul>
         <div class="man-tip">💡 Les rajoles de dalt (Completats/Otorgats/Refusats/Pendents/Requerits) i el filtre "Otorgat" són els mateixos que a BBDD.</div>
+        <p>El botó <b>⬇ Exportar</b> genera un Excel (.xlsx) amb les files que es veuen actualment a la taula (respectant els filtres aplicats).</p>
       </section>
 
       <section class="man-section" id="man-schedule">
@@ -669,6 +676,7 @@ html{scroll-behavior:smooth;}
         </ul>
         <div class="man-tip">💡 Les columnes Empresa, Tiquet, Cupó i Expedient queden fixes en fer scroll horitzontal.</div>
         <div class="man-warn">⚠️ Eliminar un requeriment (botó ×) és permanent i desmarca sola la casella "Requeriment" a Comercial si era l'últim requeriment obert d'aquella empresa.</div>
+        <p>El botó <b>⬇ Exportar</b> (Master) genera un Excel (.xlsx) amb tots els requeriments de la taula.</p>
       </section>
 
       <section class="man-section" id="man-faqs">

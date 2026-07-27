@@ -1140,9 +1140,9 @@ function reqConsultorCell(r){
   const master=isMasterActive();
   const hasEmail=!!(r.email_consultor&&r.email_consultor.trim());
   const field=master
-    ? `<select class="sel-small" onchange="svsReq(${r.id},'email_consultor',this.value)"><option value=""${hasEmail?'':' selected'}>—</option>${CONSULTORS.map(c=>`<option value="${c}"${r.email_consultor===c?' selected':''}>${c}</option>`).join('')}</select>`
-    : `<span>${r.email_consultor||''}</span>`;
-  return `<td><div style="display:flex;align-items:center;gap:4px;min-width:110px">${field}<button type="button" onclick="sendReqEmail(${r.id})"${hasEmail?'':' disabled'} title="Enviar TODO per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'}">✉️</button></div></td>`;
+    ? `<select class="sel-small" style="max-width:120px;flex:1 1 auto;min-width:0" onchange="svsReq(${r.id},'email_consultor',this.value)"><option value=""${hasEmail?'':' selected'}>—</option>${CONSULTORS.map(c=>`<option value="${c}"${r.email_consultor===c?' selected':''}>${c}</option>`).join('')}</select>`
+    : `<span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block">${r.email_consultor||''}</span>`;
+  return `<td><div style="display:flex;align-items:center;gap:4px;min-width:145px">${field}<button type="button" onclick="sendReqEmail(${r.id})"${hasEmail?'':' disabled'} title="Enviar TODO per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'};flex-shrink:0">✉️</button></div></td>`;
 }
 function sendReqEmail(id){
   const r=REQ.find(x=>x.id===id);

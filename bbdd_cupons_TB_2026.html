@@ -143,7 +143,7 @@ thead tr:nth-child(2) th{top:28px;}
 .com-check{width:80px;min-width:80px;max-width:80px;text-align:center;}
 .com-req{min-width:130px;text-align:center;font-weight:bold;white-space:nowrap;}
 .com-date{width:70px;min-width:70px;max-width:70px;}
-.com-notes{width:1125px;min-width:440px;}
+.com-notes{width:800px;min-width:350px;}
 .ccon{width:143px;min-width:143px;max-width:143px;}
 .cmob{width:82px;min-width:82px;max-width:82px;}
 .ceml{width:155px;min-width:155px;max-width:155px;}
@@ -487,6 +487,8 @@ html{scroll-behavior:smooth;}
             <option value="oferta_acceptada:complet">Acceptada — Complet</option>
             <option value="kickoff_esperat:pendent">Kick-off — Pendent</option>
             <option value="kickoff_esperat:complet">Kick-off — Complet</option>
+            <option value="todo:complet">TODO — Marcat</option>
+            <option value="todo:pendent">TODO — Sense marcar</option>
           </select>
         </div>
         <button class="btn-action" onclick="exportComercial(event)" title="Exportar a Excel">⬇ Exportar</button>
@@ -510,6 +512,8 @@ html{scroll-behavior:smooth;}
           <th>Proposta<br>enviada</th>
           <th>Acceptada</th>
           <th>Kick-off</th>
+          <th>TODO</th>
+          <th>Email<br>consultor</th>
           <th>Notes<br>comercial</th>
         </tr>
       </thead>
@@ -665,9 +669,11 @@ html{scroll-behavior:smooth;}
           <li><b>Procés comercial previ:</b> casella que es ressalta de color quan està marcada.</li>
           <li><b>Primer contacte, Proposta presentada, Proposta enviada, Kick-off:</b> dates (format DD/MM/AA).</li>
           <li><b>Acceptada:</b> casella simple.</li>
-          <li><b>Notes comercial:</b> igual que Notes BBDD però més ampla.</li>
+          <li><b>TODO:</b> casella que es ressalta en vermell mentre estigui marcada, per fer-te un recordatori independent de l'estat (igual que a Requeriments).</li>
+          <li><b>Email consultor:</b> desplegable amb els emails de consultors donats d'alta al Panell Llistes ("Consultors (email)"). Un cop triat, el botó ✉️ obre el teu client de correu amb un missatge ja redactat (KAM, Empresa, Cupó, Consultor, Atorgat, Kick-off, Notes comercial), llest per revisar i enviar.</li>
+          <li><b>Notes comercial:</b> igual que Notes BBDD, una mica menys ampla per fer lloc a TODO i Email consultor.</li>
         </ul>
-        <p>A més del filtre Atorgat, es pot filtrar per <b>KAM</b>, <b>Cupó</b> i <b>Consultor</b>; els filtres es poden combinar entre ells i són independents de l'ordenació de columnes.</p>
+        <p>A més del filtre Atorgat, es pot filtrar per <b>KAM</b>, <b>Cupó</b> i <b>Consultor</b>; els filtres es poden combinar entre ells i són independents de l'ordenació de columnes. Al desplegable "Filtrar per camp" també hi ha les opcions "TODO — Marcat" i "TODO — Sense marcar".</p>
         <div class="man-tip">💡 Les rajoles de dalt (Completats/Atorgats/Refusats/Pendents/Requerits) i el filtre "Atorgat" (amb l'opció "En blanc" per als encara no decidits) són els mateixos que a BBDD.</div>
         <p>El botó <b>⬇ Exportar</b> genera un Excel (.xlsx) amb les files que es veuen actualment a la taula (respectant els filtres aplicats).</p>
       </section>

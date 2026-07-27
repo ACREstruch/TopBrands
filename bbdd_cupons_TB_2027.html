@@ -448,6 +448,21 @@ html{scroll-behavior:smooth;}
     </div>
     <div class="grp filter-grp">
       <div class="filter-row">
+        <div class="fi"><label>KAM</label>
+          <select id="fComKamSel" onchange="fComKam=this.value;renderComercial()">
+            <option value="">Tots</option>
+          </select>
+        </div>
+        <div class="fi"><label>Cupó</label>
+          <select id="fComCupSel" onchange="fComCup=this.value;renderComercial()">
+            <option value="">Tots</option>
+          </select>
+        </div>
+        <div class="fi"><label>Consultor</label>
+          <select id="fComConsSel" onchange="fComCons=this.value;renderComercial()">
+            <option value="">Tots</option>
+          </select>
+        </div>
         <div class="fi"><label>Atorgat</label>
           <select id="fComOtorSel" style="text-align:center" onchange="fComOtor=this.value;renderComercial()">
             <option value="">Tots</option>
@@ -652,6 +667,7 @@ html{scroll-behavior:smooth;}
           <li><b>Acceptada:</b> casella simple.</li>
           <li><b>Notes comercial:</b> igual que Notes BBDD però més ampla.</li>
         </ul>
+        <p>A més del filtre Atorgat, es pot filtrar per <b>KAM</b>, <b>Cupó</b> i <b>Consultor</b>; els filtres es poden combinar entre ells i són independents de l'ordenació de columnes.</p>
         <div class="man-tip">💡 Les rajoles de dalt (Completats/Atorgats/Refusats/Pendents/Requerits) i el filtre "Atorgat" (amb l'opció "En blanc" per als encara no decidits) són els mateixos que a BBDD.</div>
         <p>El botó <b>⬇ Exportar</b> genera un Excel (.xlsx) amb les files que es veuen actualment a la taula (respectant els filtres aplicats).</p>
       </section>

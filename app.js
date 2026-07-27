@@ -70,6 +70,7 @@ let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
 let fComOtor='';
 let fComPendent='';
+let fComKam='', fComCup='', fComCons='';
 let comSortField=null, comSortDir=1; // ordenació manual (KAM/Empresa/Cupó/Consultor) a Comercial
 let notesExpanded=new Set();
 let reqNotesExpanded=new Set();
@@ -497,6 +498,9 @@ function renderComercial(){
     const [pField,pStatus]=fComPendent.split(':');
     rows=rows.filter(d=>pStatus==='complet'?!!d[pField]:!d[pField]);
   }
+  if(fComKam)rows=rows.filter(d=>d.g===fComKam);
+  if(fComCup)rows=rows.filter(d=>d.cup===fComCup);
+  if(fComCons)rows=rows.filter(d=>d.consultor===fComCons);
   rows=rows.sort((a,b)=>{
     if(comSortField){
       const cmp=(a[comSortField]||'').toString().localeCompare((b[comSortField]||'').toString(),'ca',{sensitivity:'base',numeric:true})*comSortDir;
@@ -514,6 +518,12 @@ function renderComercial(){
   const novesComCount=D.filter(d=>d.presentat&&d.nova).length;
   const rcNovaEl=document.getElementById('recomptes-nova-comercial');
   if(rcNovaEl)rcNovaEl.innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesComCount}</span><span class="rc-l">NOVES</span></div>`;
+  const fckEl=document.getElementById('fComKamSel');
+  if(fckEl)fckEl.innerHTML=`<option value="">Tots</option>${G.map(x=>`<option value="${x}"${fComKam===x?' selected':''}>${x}</option>`).join('')}`;
+  const fccEl=document.getElementById('fComCupSel');
+  if(fccEl)fccEl.innerHTML=`<option value="">Tots</option>${CUPS.filter(x=>x).map(x=>`<option value="${x}"${fComCup===x?' selected':''}>${x}</option>`).join('')}`;
+  const fcnEl=document.getElementById('fComConsSel');
+  if(fcnEl)fcnEl.innerHTML=`<option value="">Tots</option>${CONS.map(x=>`<option value="${x}"${fComCons===x?' selected':''}>${x}</option>`).join('')}`;
   requestAnimationFrame(()=>updateNotesToggles('#com-table-wrap'));
   updateComSortArrows();
 }

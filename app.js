@@ -19,6 +19,7 @@ let WEBLIST=['SI','NO','SBY','PROB'];
 let CUPS=['','CEXP','PI','EC','IA'];
 let SITS=['','COMPLETAT','PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'];
 let OTORGAT_OPTS=['','SI','NO','REQUERIT'];
+let CONSULTORS=[]; // llista d'emails de consultors per al desplegable "Email consultor" a Requeriments
 
 const SIT_COLORS={
   'COMPLETAT':  {bg:'#00B050',fg:'#fff'},
@@ -946,6 +947,7 @@ function renderLlistes(){
     {title:'Otorgat',arr:OTORGAT_OPTS.filter(x=>x),key:'otorgat',note:''},
     {title:'Estat requeriment',arr:REQ_ESTAT_OPTS.filter(x=>x),key:'reqestat',note:''},
     {title:'Resolució final',arr:RESOLUCIO_OPTS.filter(x=>x),key:'resolucio',note:''},
+    {title:'Consultors (email)',arr:CONSULTORS,key:'consultors',note:''},
   ];
   document.getElementById('llistes-contingut').innerHTML=`<div class="llistes-grid">${llistes.map(l=>`
     <div class="llista-grp">
@@ -962,7 +964,8 @@ function renderLlistes(){
 }
 function addToList(key){
   const el=document.getElementById('inp-'+key);
-  const v=el.value.trim().toUpperCase();
+  const raw=el.value.trim();
+  const v=key==='consultors'?raw.toLowerCase():raw.toUpperCase();
   if(!v)return;
   let arr=null;
   if(key==='g'&&!G.includes(v)){G.push(v);arr=G;}
@@ -977,6 +980,7 @@ function addToList(key){
   else if(key==='otorgat'&&!OTORGAT_OPTS.includes(v)){OTORGAT_OPTS.push(v);arr=OTORGAT_OPTS;}
   else if(key==='reqestat'&&!REQ_ESTAT_OPTS.includes(v)){REQ_ESTAT_OPTS.push(v);arr=REQ_ESTAT_OPTS;}
   else if(key==='resolucio'&&!RESOLUCIO_OPTS.includes(v)){RESOLUCIO_OPTS.push(v);arr=RESOLUCIO_OPTS;}
+  else if(key==='consultors'&&!CONSULTORS.includes(v)){CONSULTORS.push(v);arr=CONSULTORS;}
   el.value='';renderLlistes();render();renderRequerimentsTable();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
@@ -994,6 +998,7 @@ function removeFromList(key,v){
   else if(key==='otorgat'){OTORGAT_OPTS=OTORGAT_OPTS.filter(x=>x!==v&&x!=='');if(!OTORGAT_OPTS.includes(''))OTORGAT_OPTS.unshift('');arr=OTORGAT_OPTS;}
   else if(key==='reqestat'){REQ_ESTAT_OPTS=REQ_ESTAT_OPTS.filter(x=>x!==v&&x!=='');if(!REQ_ESTAT_OPTS.includes(''))REQ_ESTAT_OPTS.unshift('');arr=REQ_ESTAT_OPTS;}
   else if(key==='resolucio'){RESOLUCIO_OPTS=RESOLUCIO_OPTS.filter(x=>x!==v&&x!=='');if(!RESOLUCIO_OPTS.includes(''))RESOLUCIO_OPTS.unshift('');arr=RESOLUCIO_OPTS;}
+  else if(key==='consultors'){CONSULTORS=CONSULTORS.filter(x=>x!==v);arr=CONSULTORS;}
   renderLlistes();render();renderRequerimentsTable();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
@@ -1132,8 +1137,12 @@ function reqTodoCell(r){
   return `<td style="text-align:center;${bg}"><input type="checkbox"${r.todo?' checked':''}${master?'':' disabled'} onchange="svsReq(${r.id},'todo',this.checked)"></td>`;
 }
 function reqConsultorCell(r){
+  const master=isMasterActive();
   const hasEmail=!!(r.email_consultor&&r.email_consultor.trim());
-  return `<td><div style="display:flex;align-items:center;gap:4px;min-width:110px">${ecReq(r,'email_consultor',r.email_consultor)}<button type="button" onclick="sendReqEmail(${r.id})"${hasEmail?'':' disabled'} title="Enviar TODO per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'}">✉️</button></div></td>`;
+  const field=master
+    ? `<select class="sel-small" onchange="svsReq(${r.id},'email_consultor',this.value)"><option value=""${hasEmail?'':' selected'}>—</option>${CONSULTORS.map(c=>`<option value="${c}"${r.email_consultor===c?' selected':''}>${c}</option>`).join('')}</select>`
+    : `<span>${r.email_consultor||''}</span>`;
+  return `<td><div style="display:flex;align-items:center;gap:4px;min-width:110px">${field}<button type="button" onclick="sendReqEmail(${r.id})"${hasEmail?'':' disabled'} title="Enviar TODO per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'}">✉️</button></div></td>`;
 }
 function sendReqEmail(id){
   const r=REQ.find(x=>x.id===id);
@@ -1455,6 +1464,7 @@ async function init(){
     if(lists.otorgat)OTORGAT_OPTS=lists.otorgat;
     if(lists.reqestat)REQ_ESTAT_OPTS=lists.reqestat;
     if(lists.resolucio)RESOLUCIO_OPTS=lists.resolucio;
+    if(lists.consultors)CONSULTORS=lists.consultors;
     pins=pinMap;
     rebuildRoleBtns();render();
   }catch(e){
@@ -1601,7 +1611,7 @@ setInterval(async()=>{
     let changed=false;
     if(pw&&pw!==ADMIN_PW_MASTER){ADMIN_PW_MASTER=pw;}
     if(JSON.stringify(pinMap)!==JSON.stringify(pins)){pins=pinMap;changed=true;}
-    const curLists={g:G,pf:PF,td:TD,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH,otorgat:OTORGAT_OPTS,reqestat:REQ_ESTAT_OPTS,resolucio:RESOLUCIO_OPTS};
+    const curLists={g:G,pf:PF,td:TD,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH,otorgat:OTORGAT_OPTS,reqestat:REQ_ESTAT_OPTS,resolucio:RESOLUCIO_OPTS,consultors:CONSULTORS};
     Object.keys(curLists).forEach(k=>{
       if(lists[k]&&JSON.stringify(lists[k])!==JSON.stringify(curLists[k]))changed=true;
     });
@@ -1611,6 +1621,7 @@ setInterval(async()=>{
     if(lists.otorgat)OTORGAT_OPTS=lists.otorgat;
     if(lists.reqestat)REQ_ESTAT_OPTS=lists.reqestat;
     if(lists.resolucio)RESOLUCIO_OPTS=lists.resolucio;
+    if(lists.consultors)CONSULTORS=lists.consultors;
     if(changed){render();renderRequerimentsTable();}
   }catch(e){console.warn('Polling config error:',e);}
 },2000);

@@ -117,11 +117,11 @@ async function exportComercial(ev){
 }
 async function exportRequeriments(ev){
   await runExport(ev&&ev.target,async()=>{
-    const header=['Empresa','Tiquet','Cupó','Expedient','Tipus','Aclariment tècnic','Comentaris Back Office','Dead line','Estat requeriment','TODO','Data presentació','Comentaris KAM','Resolució final','Data resolució'];
+    const header=['Empresa','Tiquet','Cupó','Expedient','Tipus','Aclariment tècnic','Comentaris Back Office','Dead line','Estat requeriment','TODO','Email consultor','Data presentació','Comentaris KAM','Resolució final','Data resolució'];
     const data=REQ.map(r=>{
       const ids=parseTipusIds(r.tipus_ids);
       const tipusNames=ids.map(tid=>{const t=REQ_TIPUS.find(x=>x.id===tid);return t?t.alies.split(',')[0]:'';}).filter(Boolean).join(', ');
-      return [r.c_emp,r.c_tke,r.c_cup,r.expedient,tipusNames,r.aclariment_tecnic,r.comentaris_backoffice,r.dead_line,r.estat,boolTxt(r.todo),r.data_presentacio,r.comentaris_kam,r.resolucio_final,r.data_resolucio];
+      return [r.c_emp,r.c_tke,r.c_cup,r.expedient,tipusNames,r.aclariment_tecnic,r.comentaris_backoffice,r.dead_line,r.estat,boolTxt(r.todo),r.email_consultor,r.data_presentacio,r.comentaris_kam,r.resolucio_final,r.data_resolucio];
     });
     await exportSheet('Requeriments_cupons.xlsx','Requeriments',header,data);
   });
@@ -1038,7 +1038,7 @@ async function setPin(name,pin){
    15. REQUERIMENTS (seguiment post-presentació)
 ═══════════════════════════════════════════════ */
 const REQ_FIELDS=['expedient','tipus_ids','aclariment_tecnic','comentaris_backoffice','dead_line','estat',
-  'data_presentacio','comentaris_kam','resolucio_final','data_resolucio','todo'];
+  'data_presentacio','comentaris_kam','resolucio_final','data_resolucio','todo','email_consultor'];
 const TIPUS_FIELDS=['alies','pregunta','comentari','recurs_nom','recurs_link'];
 
 function isMasterActive(){return cT==='a'&&adminLevel==='master';}
@@ -1130,6 +1130,28 @@ function reqTodoCell(r){
   const master=isMasterActive();
   const bg=r.todo?'background:#FF3333;':'';
   return `<td style="text-align:center;${bg}"><input type="checkbox"${r.todo?' checked':''}${master?'':' disabled'} onchange="svsReq(${r.id},'todo',this.checked)"></td>`;
+}
+function reqConsultorCell(r){
+  const hasEmail=!!(r.email_consultor&&r.email_consultor.trim());
+  return `<td><div style="display:flex;align-items:center;gap:4px;min-width:110px">${ecReq(r,'email_consultor',r.email_consultor)}<button type="button" onclick="sendReqEmail(${r.id})"${hasEmail?'':' disabled'} title="Enviar TODO per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'}">✉️</button></div></td>`;
+}
+function sendReqEmail(id){
+  const r=REQ.find(x=>x.id===id);
+  if(!r||!r.email_consultor)return;
+  const tipus=parseTipusIds(r.tipus_ids).map(tid=>{const t=REQ_TIPUS.find(x=>x.id===tid);return t?t.alies.split(',')[0]:'';}).filter(Boolean).join(', ');
+  const subject=`Requeriment ${r.c_emp||''} — Tiquet ${r.c_tke||''}`;
+  const body=[
+    `Empresa: ${r.c_emp||''}`,
+    `Tiquet: ${r.c_tke||''}`,
+    `Cupó: ${r.c_cup||''}`,
+    `Expedient: ${r.expedient||''}`,
+    `Tipus: ${tipus}`,
+    `Aclariment tècnic: ${r.aclariment_tecnic||''}`,
+    `Comentaris Back Office: ${r.comentaris_backoffice||''}`,
+    `Dead line: ${r.dead_line||''}`,
+    `Estat requeriment: ${r.estat||''}`,
+  ].join('\n');
+  window.location.href=`mailto:${r.email_consultor}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 function reqWideCell(r,f,innerHtml){
   const key=r.id+':'+f;
@@ -1232,6 +1254,7 @@ function reqRowHtml(r){
     <td class="rq-date">${ecReq(r,'dead_line',r.dead_line)}</td>
     <td>${selReqEstat(r)}</td>
     ${reqTodoCell(r)}
+    ${reqConsultorCell(r)}
     <td class="rq-date">${ecReq(r,'data_presentacio',r.data_presentacio)}</td>
     ${reqWideCell(r,'comentaris_kam',ecReq(r,'comentaris_kam',r.comentaris_kam,true))}
     <td>${selResolucioFinal(r)}</td>

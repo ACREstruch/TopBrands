@@ -20,6 +20,7 @@ let CUPS=['','CEXP','PI','EC','IA'];
 let SITS=['','COMPLETAT','PROCÉS','POTENCIAL','HO DESCARTA','FA COMPE','NO COMPLEIX','NUL'];
 let OTORGAT_OPTS=['','SI','NO','REQUERIT'];
 let CONSULTORS=[]; // llista d'emails de consultors per al desplegable "Email consultor" a Requeriments
+let CONS=['AMO','MO','PL']; // llista d'inicials de consultors per al desplegable "Consultor" a Comercial
 
 const SIT_COLORS={
   'COMPLETAT':  {bg:'#00B050',fg:'#fff'},
@@ -41,7 +42,7 @@ const ITA_COLORS={
 const WEB_COLORS={'NO':{bg:'#F4CCCC',fg:'#000'},'SBY':{bg:'#FFEB9C',fg:'#222'}};
 const CUP_COLORS={CEXP:{bg:'#EEEDFE',fg:'#534AB7'},PI:{bg:'#E1F5EE',fg:'#0F6E56'},EC:{bg:'#E6F1FB',fg:'#185FA5'},IA:{bg:'#FAEEDA',fg:'#854F0B'}};
 const OTORGAT_ESTAT={
-  'SI':{label:'OTORGAT',bg:'#A02B93',fg:'#fff'},
+  'SI':{label:'ATORGAT',bg:'#A02B93',fg:'#fff'},
   'NO':{label:'REFUSAT',bg:'#808080',fg:'#fff'},
   'REQUERIT':{label:'REQUERIT',bg:'#F2CEED',fg:'#000'},
 };
@@ -50,16 +51,16 @@ const REQ_ESTAT_COLORS={
   'PRESENTAT':          {bg:'#C1F0C8',fg:'#163d1f'},
   'PERDUT':             {bg:'#EA9999',fg:'#4a0000'},
   'RESOLT':             {bg:'#00B050',fg:'#fff'},
-  'OTORGAT':            {bg:'#A02B93',fg:'#fff'},
+  'ATORGAT':            {bg:'#A02B93',fg:'#fff'},
 };
-const RESOLUCIO_TO_ESTAT={'':'','CONCEDIT':'OTORGAT','RESOLT':'RESOLT','REFUSAT':'PERDUT','INADMISSIÓ':'PERDUT'};
+const RESOLUCIO_TO_ESTAT={'':'','CONCEDIT':'ATORGAT','RESOLT':'RESOLT','REFUSAT':'PERDUT','INADMISSIÓ':'PERDUT'};
 const RESOLUCIO_COLORS={
   'CONCEDIT':  {bg:'#00B050',fg:'#fff'},
   'RESOLT':    {bg:'#00B050',fg:'#fff'},
   'INADMISSIÓ':{bg:'#EA9999',fg:'#4a0000'},
   'REFUSAT':   {bg:'#EA9999',fg:'#4a0000'},
 };
-let REQ_ESTAT_OPTS=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','RESOLT','OTORGAT','No aplica'];
+let REQ_ESTAT_OPTS=['','PENDENT PRESENTACIÓ','PRESENTAT','PERDUT','RESOLT','ATORGAT','No aplica'];
 let RESOLUCIO_OPTS=['','CONCEDIT','RESOLT','INADMISSIÓ','REFUSAT'];
 const SCH_HORES=(()=>{const h=[];for(let i=9;i<=15;i++){h.push(`${String(i).padStart(2,'0')}:00`);if(i<15)h.push(`${String(i).padStart(2,'0')}:30`);}return h;})();
 
@@ -69,6 +70,7 @@ let cU='Admin', cT='a';
 let fCup='', fSit='', fQ='', fWeb=false, fHora=false, fNova=false;
 let fComOtor='';
 let fComPendent='';
+let comSortField=null, comSortDir=1; // ordenació manual (KAM/Empresa/Cupó/Consultor) a Comercial
 let notesExpanded=new Set();
 let reqNotesExpanded=new Set();
 let comNotesExpanded=new Set();
@@ -107,11 +109,11 @@ async function exportBBDD(ev){
 }
 async function exportComercial(ev){
   await runExport(ev&&ev.target,async()=>{
-    const header=['KAM','Empresa','Nova','Cupó','Otorgat','Requeriment','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','Notes comercial'];
+    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','Notes comercial'];
     const data=lastComRows.map(d=>{
       const reqs=REQ.filter(r=>r.cupo_id===d.id);
       const latest=reqs.length?reqs.reduce((a,b)=>b.id>a.id?b:a):null;
-      return [d.g,d.emp,boolTxt(d.nova),d.cup,d.otorgat,latest?(latest.estat||''):'',boolTxt(d.proc_comercial_previ),d.primer_contacte,d.proposta_presentada,d.proposta_enviada,boolTxt(d.oferta_acceptada),d.kickoff_esperat,d.notes_comercial];
+      return [d.g,d.emp,boolTxt(d.nova),d.cup,d.consultor,d.otorgat,latest?(latest.estat||''):'',boolTxt(d.proc_comercial_previ),d.primer_contacte,d.proposta_presentada,d.proposta_enviada,boolTxt(d.oferta_acceptada),d.kickoff_esperat,d.notes_comercial];
     });
     await exportSheet('Comercial_cupons.xlsx','Comercial',header,data);
   });
@@ -414,6 +416,11 @@ function comCheckCell(d,f){
   const canEdit=cT==='a'&&adminLevel;
   return `<td class="com-check"><input type="checkbox"${d[f]?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'${f}',this.checked)"></td>`;
 }
+function comConsultorCell(d){
+  const canEdit=cT==='a'&&adminLevel;
+  if(!canEdit)return `<td class="ccons">${d.consultor||''}</td>`;
+  return `<td class="ccons"><select onchange="svs(${d.id},'consultor',this.value)"><option value=""></option>${CONS.map(x=>`<option value="${x}"${d.consultor===x?' selected':''}>${x}</option>`).join('')}</select></td>`;
+}
 function comOtorgatCell(d){
   const c=OTORGAT_ESTAT[d.otorgat]||{};
   const bg=c.bg||'',fg=c.fg||'#222';
@@ -428,6 +435,7 @@ function comRowHtml(d){
     <td class="cemp">${d.emp||''}</td>
     <td class="cnov webcel"><input type="checkbox"${d.nova?' checked':''} onclick="return false;" style="cursor:default"></td>
     <td class="ccup">${d.cup||''}</td>
+    ${comConsultorCell(d)}
     ${comOtorgatCell(d)}
     ${comReqEstatCell(d)}
     ${comCheckColorCell(d,'proc_comercial_previ',OTORGAT_ESTAT.SI)}
@@ -447,7 +455,7 @@ function comOtorgatCounts(){
   const pendentsCount=completatsCount-otorgatsCount-refusatsCount;
   return [
     {l:'COMPLETATS',n:completatsCount,bg:'#00B050',fg:'#fff'},
-    {l:'OTORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
+    {l:'ATORGATS',n:otorgatsCount,bg:'#A02B93',fg:'#fff'},
     {l:'REFUSATS',n:refusatsCount,bg:'#808080',fg:'#fff'},
     {l:'PENDENTS',n:pendentsCount,bg:'#fff',fg:'#222'},
     {l:'REQUERITS',n:requeritsCount,bg:'#F2CEED',fg:'#000'},
@@ -472,14 +480,30 @@ function cupSiNoGroups(){
     ];
   });
 }
+function comSort(field){
+  if(comSortField===field)comSortDir*=-1;else{comSortField=field;comSortDir=1;}
+  renderComercial();
+}
+function updateComSortArrows(){
+  ['g','emp','cup','consultor'].forEach(f=>{
+    const el=document.getElementById('csort-'+f);
+    if(el)el.textContent=comSortField===f?(comSortDir===1?' ▲':' ▼'):'';
+  });
+}
 function renderComercial(){
   let rows=D.filter(d=>d.presentat);
-  if(fComOtor)rows=rows.filter(d=>d.otorgat===fComOtor);
+  if(fComOtor)rows=rows.filter(d=>fComOtor==='_BLANK_'?!d.otorgat:d.otorgat===fComOtor);
   if(fComPendent){
     const [pField,pStatus]=fComPendent.split(':');
     rows=rows.filter(d=>pStatus==='complet'?!!d[pField]:!d[pField]);
   }
-  rows=rows.sort((a,b)=>(parseInt(a.tke)||0)-(parseInt(b.tke)||0));
+  rows=rows.sort((a,b)=>{
+    if(comSortField){
+      const cmp=(a[comSortField]||'').toString().localeCompare((b[comSortField]||'').toString(),'ca',{sensitivity:'base',numeric:true})*comSortDir;
+      if(cmp!==0)return cmp;
+    }
+    return (parseInt(a.tke)||0)-(parseInt(b.tke)||0);
+  });
   lastComRows=rows;
   const tbody=document.getElementById('com-tbody');
   if(tbody)tbody.innerHTML=rows.map(comRowHtml).join('');
@@ -491,6 +515,7 @@ function renderComercial(){
   const rcNovaEl=document.getElementById('recomptes-nova-comercial');
   if(rcNovaEl)rcNovaEl.innerHTML=`<div class="rcomp" style="background:#2c5aa0;color:#fff"><span class="rc-n">${novesComCount}</span><span class="rc-l">NOVES</span></div>`;
   requestAnimationFrame(()=>updateNotesToggles('#com-table-wrap'));
+  updateComSortArrows();
 }
 
 function toggleGroup(sit){
@@ -944,10 +969,11 @@ function renderLlistes(){
     {title:'Estat LEAD',arr:SITS.filter(x=>x),key:'s',note:''},
     {title:'Web',arr:WEBLIST,key:'web',note:''},
     {title:'Qui — Valid.',arr:TF3,key:'tf3',note:'(llista pròpia)'},
-    {title:'Otorgat',arr:OTORGAT_OPTS.filter(x=>x),key:'otorgat',note:''},
+    {title:'Atorgat',arr:OTORGAT_OPTS.filter(x=>x),key:'otorgat',note:''},
     {title:'Estat requeriment',arr:REQ_ESTAT_OPTS.filter(x=>x),key:'reqestat',note:''},
     {title:'Resolució final',arr:RESOLUCIO_OPTS.filter(x=>x),key:'resolucio',note:''},
     {title:'Consultors (email)',arr:CONSULTORS,key:'consultors',note:''},
+    {title:'Consultor',arr:CONS,key:'cons',note:'(desplegable a Comercial)'},
   ];
   document.getElementById('llistes-contingut').innerHTML=`<div class="llistes-grid">${llistes.map(l=>`
     <div class="llista-grp">
@@ -981,6 +1007,7 @@ function addToList(key){
   else if(key==='reqestat'&&!REQ_ESTAT_OPTS.includes(v)){REQ_ESTAT_OPTS.push(v);arr=REQ_ESTAT_OPTS;}
   else if(key==='resolucio'&&!RESOLUCIO_OPTS.includes(v)){RESOLUCIO_OPTS.push(v);arr=RESOLUCIO_OPTS;}
   else if(key==='consultors'&&!CONSULTORS.includes(v)){CONSULTORS.push(v);arr=CONSULTORS;}
+  else if(key==='cons'&&!CONS.includes(v)){CONS.push(v);arr=CONS;}
   el.value='';renderLlistes();render();renderRequerimentsTable();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
@@ -999,6 +1026,7 @@ function removeFromList(key,v){
   else if(key==='reqestat'){REQ_ESTAT_OPTS=REQ_ESTAT_OPTS.filter(x=>x!==v&&x!=='');if(!REQ_ESTAT_OPTS.includes(''))REQ_ESTAT_OPTS.unshift('');arr=REQ_ESTAT_OPTS;}
   else if(key==='resolucio'){RESOLUCIO_OPTS=RESOLUCIO_OPTS.filter(x=>x!==v&&x!=='');if(!RESOLUCIO_OPTS.includes(''))RESOLUCIO_OPTS.unshift('');arr=RESOLUCIO_OPTS;}
   else if(key==='consultors'){CONSULTORS=CONSULTORS.filter(x=>x!==v);arr=CONSULTORS;}
+  else if(key==='cons'){CONS=CONS.filter(x=>x!==v);arr=CONS;}
   renderLlistes();render();renderRequerimentsTable();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
@@ -1228,7 +1256,7 @@ async function confirmNouReq(){
   const d=D.find(x=>x.id===cupoId);
   if(d&&d.otorgat!=='REQUERIT'){
     d.otorgat='REQUERIT';
-    try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut marcar Otorgat com a REQUERIT:',e);}
+    try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut marcar Atorgat com a REQUERIT:',e);}
     renderComercial();
   }
   renderRequeriments();
@@ -1243,7 +1271,7 @@ async function delRequerimentRow(id){
     const d=D.find(x=>x.id===cupoId);
     if(d&&d.otorgat==='REQUERIT'){
       d.otorgat='';
-      try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut buidar Otorgat:',e);}
+      try{await sbUpdate(d.id,d);}catch(e){console.warn('No s\'ha pogut buidar Atorgat:',e);}
       renderComercial();
     }
   }
@@ -1341,8 +1369,8 @@ async function sbGet(){
 async function sbInsert(d){
   const s=rowToSb(d);
   const res=await neonQuery(
-    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat,holded,notes_comercial) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38) RETURNING *`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial]
+    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat,holded,notes_comercial,consultor) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor]
   );
   return res.rows?.[0];
 }
@@ -1363,8 +1391,8 @@ async function sbUpdate(id,d){
     }
   }
   const res=await neonQuery(
-    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,holded=$37,notes_comercial=$38,updated_at=NOW() WHERE id=$39 RETURNING updated_at`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,id]
+    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,holded=$37,notes_comercial=$38,consultor=$39,updated_at=NOW() WHERE id=$40 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,id]
   );
   d.updated_at=res.rows?.[0]?.updated_at;
 }
@@ -1395,7 +1423,7 @@ function rowToSb(d){
     proc_comercial_previ:d.proc_comercial_previ,te_requeriment:d.te_requeriment,primer_contacte:d.primer_contacte,
     proposta_presentada:d.proposta_presentada,proposta_enviada:d.proposta_enviada,
     oferta_acceptada:d.oferta_acceptada,kickoff_esperat:d.kickoff_esperat,holded:d.holded,
-    notes_comercial:d.notes_comercial};
+    notes_comercial:d.notes_comercial,consultor:d.consultor};
 }
 function sbToRow(r){
   return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',cup_ant:r.cup_ant||'',otorgat:r.otorgat||'',
@@ -1408,7 +1436,7 @@ function sbToRow(r){
     proc_comercial_previ:!!r.proc_comercial_previ,te_requeriment:!!r.te_requeriment,primer_contacte:r.primer_contacte||'',
     proposta_presentada:r.proposta_presentada||'',proposta_enviada:r.proposta_enviada||'',
     oferta_acceptada:!!r.oferta_acceptada,kickoff_esperat:r.kickoff_esperat||'',holded:!!r.holded,
-    notes_comercial:r.notes_comercial||''};
+    notes_comercial:r.notes_comercial||'',consultor:r.consultor||''};
 }
 
 // Indicador de guardat
@@ -1465,6 +1493,7 @@ async function init(){
     if(lists.reqestat)REQ_ESTAT_OPTS=lists.reqestat;
     if(lists.resolucio)RESOLUCIO_OPTS=lists.resolucio;
     if(lists.consultors)CONSULTORS=lists.consultors;
+    if(lists.cons)CONS=lists.cons;
     pins=pinMap;
     rebuildRoleBtns();render();
   }catch(e){
@@ -1480,7 +1509,7 @@ async function addRow(){
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
     web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:'',
     proc_comercial_previ:false,te_requeriment:false,primer_contacte:'',proposta_presentada:'',
-    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:'',holded:false,notes_comercial:''};
+    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:'',holded:false,notes_comercial:'',consultor:''};
   showSaving();
   try{
     const saved=await sbInsert(nou);
@@ -1611,7 +1640,7 @@ setInterval(async()=>{
     let changed=false;
     if(pw&&pw!==ADMIN_PW_MASTER){ADMIN_PW_MASTER=pw;}
     if(JSON.stringify(pinMap)!==JSON.stringify(pins)){pins=pinMap;changed=true;}
-    const curLists={g:G,pf:PF,td:TD,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH,otorgat:OTORGAT_OPTS,reqestat:REQ_ESTAT_OPTS,resolucio:RESOLUCIO_OPTS,consultors:CONSULTORS};
+    const curLists={g:G,pf:PF,td:TD,qw:QW,c:CUPS,s:SITS,web:WEBLIST,tf3:TF3,tfh:TFH,otorgat:OTORGAT_OPTS,reqestat:REQ_ESTAT_OPTS,resolucio:RESOLUCIO_OPTS,consultors:CONSULTORS,cons:CONS};
     Object.keys(curLists).forEach(k=>{
       if(lists[k]&&JSON.stringify(lists[k])!==JSON.stringify(curLists[k]))changed=true;
     });
@@ -1622,6 +1651,7 @@ setInterval(async()=>{
     if(lists.reqestat)REQ_ESTAT_OPTS=lists.reqestat;
     if(lists.resolucio)RESOLUCIO_OPTS=lists.resolucio;
     if(lists.consultors)CONSULTORS=lists.consultors;
+    if(lists.cons)CONS=lists.cons;
     if(changed){render();renderRequerimentsTable();}
   }catch(e){console.warn('Polling config error:',e);}
 },2000);

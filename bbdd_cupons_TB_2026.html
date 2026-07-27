@@ -135,6 +135,9 @@ thead tr:nth-child(2) th{top:28px;}
 #com-table-wrap .cemp{width:280px;min-width:280px;max-width:280px;text-transform:uppercase;}
 #com-table-wrap .cnov{width:36px;min-width:36px;max-width:36px;}
 #com-table-wrap .ccup{width:68px;min-width:68px;max-width:68px;}
+.ccons{width:58px;min-width:58px;max-width:58px;}
+.ccons select{width:100%;}
+.sort-arrow{font-size:7pt;}
 .com-otor{width:90px;min-width:90px;max-width:90px;}
 .com-otor select{width:100%;}
 .com-check{width:80px;min-width:80px;max-width:80px;text-align:center;}
@@ -445,12 +448,13 @@ html{scroll-behavior:smooth;}
     </div>
     <div class="grp filter-grp">
       <div class="filter-row">
-        <div class="fi"><label>Otorgat</label>
-          <select id="fComOtorSel" onchange="fComOtor=this.value;renderComercial()">
+        <div class="fi"><label>Atorgat</label>
+          <select id="fComOtorSel" style="text-align:center" onchange="fComOtor=this.value;renderComercial()">
             <option value="">Tots</option>
-            <option value="SI">SI (OTORGAT)</option>
+            <option value="SI">SI (ATORGAT)</option>
             <option value="NO">NO (REFUSAT)</option>
             <option value="REQUERIT">REQUERIT</option>
+            <option value="_BLANK_">En blanc</option>
           </select>
         </div>
         <div class="fi"><label>Filtrar per camp</label>
@@ -478,11 +482,12 @@ html{scroll-behavior:smooth;}
     <table>
       <thead>
         <tr>
-          <th>KAM</th>
-          <th>Empresa</th>
+          <th style="cursor:pointer" onclick="comSort('g')" title="Clica per ordenar">KAM<span class="sort-arrow" id="csort-g"></span></th>
+          <th style="cursor:pointer" onclick="comSort('emp')" title="Clica per ordenar">Empresa<span class="sort-arrow" id="csort-emp"></span></th>
           <th>Nova</th>
-          <th>Cupó</th>
-          <th>Otorgat</th>
+          <th style="cursor:pointer" onclick="comSort('cup')" title="Clica per ordenar">Cupó<span class="sort-arrow" id="csort-cup"></span></th>
+          <th style="cursor:pointer" onclick="comSort('consultor')" title="Clica per ordenar">Cons<span class="sort-arrow" id="csort-consultor"></span></th>
+          <th>Atorgat</th>
           <th>Requeriment</th>
           <th>Procés<br>comercial<br>previ</th>
           <th>Primer<br>contacte</th>
@@ -606,7 +611,7 @@ html{scroll-behavior:smooth;}
         <div class="man-tip">💡 Alguns rols (Presentador Fitxa, Tramitador dia-D, Gestor Web, Gestor Hora) poden requerir un PIN la primera vegada que els selecciones en cada sessió del navegador.</div>
         <h3>Navegació general</h3>
         <p>La barra superior de pestanyes dona accés als diferents mòduls: aquest <b>Manual</b> (pestanya d'inici), <b>BBDD</b>, <b>Comercial</b>, <b>Schedule — Tickets</b>, <b>Schedule — Cupó</b>, <b>Requeriments</b> i <b>FAQs</b>. La pestanya activa es marca en blau.</p>
-        <p>Moltes columnes es poden filtrar (Cupó, Estat, Otorgat...) i cercar per text (empresa, contacte). A les taules amb moltes columnes, les primeres (KAM, Empresa...) queden fixes en fer scroll horitzontal perquè sempre sàpigues de quina empresa es tracta.</p>
+        <p>Moltes columnes es poden filtrar (Cupó, Estat, Atorgat...) i cercar per text (empresa, contacte). A les taules amb moltes columnes, les primeres (KAM, Empresa...) queden fixes en fer scroll horitzontal perquè sempre sàpigues de quina empresa es tracta.</p>
       </section>
 
       <section class="man-section" id="man-bbdd">
@@ -624,28 +629,30 @@ html{scroll-behavior:smooth;}
         </ul>
         <div class="man-tip">💡 Un registre passa automàticament a COMPLETAT quan Omplir/Verificar Fitxa, HOLDED i (si aplica) l'ITA estan tots fets.</div>
         <h3>Rajoles de recompte i filtres</h3>
-        <p>A dalt de la taula hi ha comptadors ràpids (Registres, Procés, Potencials, Completats, Otorgats, Refusats, Pendents, Requerits...) i filtres per Cupó, Estat, cerca de text i botons "WEB Pendent" / "HORA Pendent".</p>
+        <p>A dalt de la taula hi ha comptadors ràpids (Registres, Procés, Potencials, Completats, Atorgats, Refusats, Pendents, Requerits...) i filtres per Cupó, Estat, cerca de text i botons "WEB Pendent" / "HORA Pendent".</p>
         <p>El botó <b>⬇ Exportar</b> genera un Excel (.xlsx) amb les files que es veuen actualment a la taula (respectant els filtres aplicats).</p>
         <h3>Panell Admin (☰ Admin)</h3>
         <p>Des del botó <b>☰ Admin</b> el Master pot donar d'alta/baixa Admins ajudants amb contrasenya pròpia, i canviar la contrasenya Master.</p>
         <h3>Panell Llistes (☰ Llistes)</h3>
-        <p>Des del botó <b>☰ Llistes</b> el Master edita totes les llistes desplegables de l'aplicació: KAM, Presentadors Fitxa, Tramitadors dia-D, Gestor Web, Gestor Hora, Cupons, Estat LEAD, Web, Qui — Valid., Otorgat, Estat requeriment, Resolució final i Consultors (email). Presentadors Fitxa i Tramitadors dia-D són llistes independents: una persona pot ser-hi en una, en l'altra, o en totes dues. Els canvis s'apliquen a l'instant per a tothom.</p>
+        <p>Des del botó <b>☰ Llistes</b> el Master edita totes les llistes desplegables de l'aplicació: KAM, Presentadors Fitxa, Tramitadors dia-D, Gestor Web, Gestor Hora, Cupons, Estat LEAD, Web, Qui — Valid., Atorgat, Estat requeriment, Resolució final, Consultors (email) i Consultor. Presentadors Fitxa i Tramitadors dia-D són llistes independents: una persona pot ser-hi en una, en l'altra, o en totes dues. Els canvis s'apliquen a l'instant per a tothom.</p>
       </section>
 
       <section class="man-section" id="man-comercial">
         <h2><span class="man-icon">💼</span> Comercial</h2>
-        <p>La pestanya <b>Comercial</b> mostra, una fila per empresa, el seguiment comercial de les empreses que ja han estat <b>Presentades</b> a BBDD (s'omple sola, per ordre de Ticket — no es creen ni s'esborren files manualment aquí).</p>
+        <p>La pestanya <b>Comercial</b> mostra, una fila per empresa, el seguiment comercial de les empreses que ja han estat <b>Presentades</b> a BBDD (s'omple sola — no es creen ni s'esborren files manualment aquí).</p>
         <h3>Camps</h3>
         <ul>
-          <li><b>KAM, Empresa, Nova, Cupó:</b> només lectura, venen de BBDD.</li>
-          <li><b>Otorgat:</b> SI / NO / REQUERIT — es pinta de color (SI en lila, NO en gris, REQUERIT en rosa).</li>
-          <li><b>Requeriment:</b> només lectura — mostra l'"Estat requeriment" (vegeu pestanya Requeriments) del requeriment més recent d'aquella empresa, amb el mateix color. En crear un requeriment nou, l'Otorgat d'aquella empresa passa sol a REQUERIT; en eliminar l'últim requeriment obert, Otorgat torna a buit.</li>
+          <li><b>KAM, Empresa, Cupó:</b> venen de BBDD. Clica la capçalera d'una d'aquestes columnes (o de "Cons") per ordenar la taula per aquest camp; torna a clicar-hi per invertir l'ordre. L'ordenació és independent dels filtres aplicats.</li>
+          <li><b>Nova:</b> només lectura, ve de BBDD.</li>
+          <li><b>Consultor</b> (capçalera "Cons"): desplegable amb la llista "Consultor" del panell ☰ Llistes.</li>
+          <li><b>Atorgat:</b> SI / NO / REQUERIT — es pinta de color (SI en lila, NO en gris, REQUERIT en rosa).</li>
+          <li><b>Requeriment:</b> només lectura — mostra l'"Estat requeriment" (vegeu pestanya Requeriments) del requeriment més recent d'aquella empresa, amb el mateix color. En crear un requeriment nou, l'Atorgat d'aquella empresa passa sol a REQUERIT; en eliminar l'últim requeriment obert, Atorgat torna a buit.</li>
           <li><b>Procés comercial previ:</b> casella que es ressalta de color quan està marcada.</li>
           <li><b>Primer contacte, Proposta presentada, Proposta enviada, Kick-off:</b> dates (format DD/MM/AA).</li>
           <li><b>Acceptada:</b> casella simple.</li>
           <li><b>Notes comercial:</b> igual que Notes BBDD però més ampla.</li>
         </ul>
-        <div class="man-tip">💡 Les rajoles de dalt (Completats/Otorgats/Refusats/Pendents/Requerits) i el filtre "Otorgat" són els mateixos que a BBDD.</div>
+        <div class="man-tip">💡 Les rajoles de dalt (Completats/Atorgats/Refusats/Pendents/Requerits) i el filtre "Atorgat" (amb l'opció "En blanc" per als encara no decidits) són els mateixos que a BBDD.</div>
         <p>El botó <b>⬇ Exportar</b> genera un Excel (.xlsx) amb les files que es veuen actualment a la taula (respectant els filtres aplicats).</p>
       </section>
 
@@ -668,8 +675,8 @@ html{scroll-behavior:smooth;}
         <ul>
           <li><b>Tipus:</b> etiquetes del catàleg (vegeu FAQs); clica-hi per afegir-ne o treure'n.</li>
           <li><b>Aclariment tècnic, Comentaris Back Office, Comentaris KAM:</b> text llarg amb alçada limitada i botó "+" per expandir.</li>
-          <li><b>Estat requeriment:</b> N/A, Pendent presentació, Presentat, Perdut, Resolt, Otorgat, No aplica — es pinta de color.</li>
-          <li><b>Resolució final:</b> Concedit, Resolt, Inadmissió, Refusat. Canvia sol l'Estat requeriment: Concedit → Otorgat; Resolt → Resolt; Refusat/Inadmissió → Perdut.</li>
+          <li><b>Estat requeriment:</b> N/A, Pendent presentació, Presentat, Perdut, Resolt, Atorgat, No aplica — es pinta de color.</li>
+          <li><b>Resolució final:</b> Concedit, Resolt, Inadmissió, Refusat. Canvia sol l'Estat requeriment: Concedit → Atorgat; Resolt → Resolt; Refusat/Inadmissió → Perdut.</li>
           <li><b>TODO:</b> casella que es ressalta en vermell mentre estigui marcada, per fer-te un recordatori independent de l'estat.</li>
           <li><b>Email consultor:</b> desplegable amb els emails de consultors donats d'alta al Panell Llistes (vegeu més avall). Un cop triat, el botó ✉️ obre el teu client de correu amb un missatge ja redactat (Empresa, Tiquet, Cupó, Expedient, Tipus, Aclariment tècnic, Comentaris Back Office, Dead line i Estat), llest per revisar i enviar.</li>
           <li><b>Dead line, Data presentació, Data resolució:</b> dates en format DD/MM/AA.</li>

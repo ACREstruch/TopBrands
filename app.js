@@ -1062,7 +1062,7 @@ function addToList(key){
   else if(key==='resolucio'&&!RESOLUCIO_OPTS.includes(v)){RESOLUCIO_OPTS.push(v);arr=RESOLUCIO_OPTS;}
   else if(key==='consultors'&&!CONSULTORS.includes(v)){CONSULTORS.push(v);arr=CONSULTORS;}
   else if(key==='cons'&&!CONS.includes(v)){CONS.push(v);arr=CONS;}
-  el.value='';renderLlistes();render();renderRequerimentsTable();
+  el.value='';renderLlistes();render();renderRequerimentsTable();renderComercial();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
 function removeFromList(key,v){
@@ -1081,7 +1081,7 @@ function removeFromList(key,v){
   else if(key==='resolucio'){RESOLUCIO_OPTS=RESOLUCIO_OPTS.filter(x=>x!==v&&x!=='');if(!RESOLUCIO_OPTS.includes(''))RESOLUCIO_OPTS.unshift('');arr=RESOLUCIO_OPTS;}
   else if(key==='consultors'){CONSULTORS=CONSULTORS.filter(x=>x!==v);arr=CONSULTORS;}
   else if(key==='cons'){CONS=CONS.filter(x=>x!==v);arr=CONS;}
-  renderLlistes();render();renderRequerimentsTable();
+  renderLlistes();render();renderRequerimentsTable();renderComercial();
   if(arr)setList(key,arr).catch(e=>console.warn('Error desant llista:',e));
 }
 
@@ -1711,6 +1711,6 @@ setInterval(async()=>{
     if(lists.resolucio)RESOLUCIO_OPTS=lists.resolucio;
     if(lists.consultors)CONSULTORS=lists.consultors;
     if(lists.cons)CONS=lists.cons;
-    if(changed){render();renderRequerimentsTable();}
+    if(changed){render();renderRequerimentsTable();renderComercial();}
   }catch(e){console.warn('Polling config error:',e);}
 },2000);

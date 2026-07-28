@@ -110,11 +110,11 @@ async function exportBBDD(ev){
 }
 async function exportComercial(ev){
   await runExport(ev&&ev.target,async()=>{
-    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','TODO','Email consultor','Notes comercial'];
+    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','TODO','Email consultor','Email consultor CC','Notes comercial'];
     const data=lastComRows.map(d=>{
       const reqs=REQ.filter(r=>r.cupo_id===d.id);
       const latest=reqs.length?reqs.reduce((a,b)=>b.id>a.id?b:a):null;
-      return [d.g,d.emp,boolTxt(d.nova),d.cup,d.consultor,d.otorgat,latest?(latest.estat||''):'',boolTxt(d.proc_comercial_previ),d.primer_contacte,d.proposta_presentada,d.proposta_enviada,boolTxt(d.oferta_acceptada),d.kickoff_esperat,boolTxt(d.todo),d.email_consultor,d.notes_comercial];
+      return [d.g,d.emp,boolTxt(d.nova),d.cup,d.consultor,d.otorgat,latest?(latest.estat||''):'',boolTxt(d.proc_comercial_previ),d.primer_contacte,d.proposta_presentada,d.proposta_enviada,boolTxt(d.oferta_acceptada),d.kickoff_esperat,boolTxt(d.todo),d.email_consultor,d.email_consultor_cc,d.notes_comercial];
     });
     await exportSheet('Comercial_cupons.xlsx','Comercial',header,data);
   });
@@ -427,17 +427,24 @@ function comTodoCell(d){
   const bg=d.todo?'background:#FF3333;':'';
   return `<td class="com-check" style="${bg}"><input type="checkbox"${d.todo?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'todo',this.checked)"></td>`;
 }
+function comEmailSel(d,field,val,canEdit){
+  if(!canEdit)return `<span style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block">${val||''}</span>`;
+  return `<select class="sel-small" style="max-width:190px;width:100%" onchange="svs(${d.id},'${field}',this.value)"><option value=""${val?'':' selected'}>—</option>${CONSULTORS.map(c=>`<option value="${c}"${val===c?' selected':''}>${c}</option>`).join('')}</select>`;
+}
 function comEmailConsultorCell(d){
   const canEdit=cT==='a'&&adminLevel;
   const hasEmail=!!(d.email_consultor&&d.email_consultor.trim());
-  const field=canEdit
-    ? `<select class="sel-small" style="max-width:120px;flex:1 1 auto;min-width:0" onchange="svs(${d.id},'email_consultor',this.value)"><option value=""${hasEmail?'':' selected'}>—</option>${CONSULTORS.map(c=>`<option value="${c}"${d.email_consultor===c?' selected':''}>${c}</option>`).join('')}</select>`
-    : `<span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block">${d.email_consultor||''}</span>`;
-  return `<td><div style="display:flex;align-items:center;gap:4px;min-width:145px">${field}<button type="button" onclick="sendComEmail(${d.id})"${hasEmail?'':' disabled'} title="Enviar TODO per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'};flex-shrink:0">✉️</button></div></td>`;
+  return `<td><div style="display:flex;flex-direction:column;gap:2px;min-width:215px">
+    <div style="display:flex;align-items:center;gap:4px">${comEmailSel(d,'email_consultor',d.email_consultor,canEdit)}<button type="button" onclick="sendComEmail(${d.id})"${hasEmail?'':' disabled'} title="Enviar per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'};flex-shrink:0">✉️</button></div>
+    <div style="display:flex;align-items:center;gap:4px"><span style="font-size:7pt;color:#888;width:16px;flex-shrink:0">CC</span>${comEmailSel(d,'email_consultor_cc',d.email_consultor_cc,canEdit)}</div>
+  </div></td>`;
 }
 function sendComEmail(id){
   const d=D.find(x=>x.id===id);
   if(!d||!d.email_consultor)return;
+  const reqs=REQ.filter(r=>r.cupo_id===d.id);
+  const latest=reqs.length?reqs.reduce((a,b)=>b.id>a.id?b:a):null;
+  const reqEstat=latest?(latest.estat||''):'';
   const subject=`Seguiment ${d.emp||''} — Cupó ${d.cup||''}`;
   const body=[
     `KAM: ${d.g||''}`,
@@ -445,10 +452,17 @@ function sendComEmail(id){
     `Cupó: ${d.cup||''}`,
     `Consultor: ${d.consultor||''}`,
     `Atorgat: ${d.otorgat||''}`,
+    `Requeriment: ${reqEstat}`,
+    `Procés comercial previ: ${d.proc_comercial_previ?'SI':'PENDENT'}`,
+    `Primer contacte: ${d.primer_contacte||''}`,
+    `Proposta presentada: ${d.proposta_presentada||''}`,
+    `Proposta enviada: ${d.proposta_enviada||''}`,
+    `Acceptada: ${d.oferta_acceptada?'SI':'PENDENT'}`,
     `Kick-off: ${d.kickoff_esperat||''}`,
     `Notes comercial: ${d.notes_comercial||''}`,
   ].join('\n');
-  window.location.href=`mailto:${d.email_consultor}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const cc=d.email_consultor_cc?`&cc=${encodeURIComponent(d.email_consultor_cc)}`:'';
+  window.location.href=`mailto:${d.email_consultor}?subject=${encodeURIComponent(subject)}${cc}&body=${encodeURIComponent(body)}`;
 }
 function comOtorgatCell(d){
   const c=OTORGAT_ESTAT[d.otorgat]||{};
@@ -1208,9 +1222,9 @@ function reqConsultorCell(r){
   const master=isMasterActive();
   const hasEmail=!!(r.email_consultor&&r.email_consultor.trim());
   const field=master
-    ? `<select class="sel-small" style="max-width:120px;flex:1 1 auto;min-width:0" onchange="svsReq(${r.id},'email_consultor',this.value)"><option value=""${hasEmail?'':' selected'}>—</option>${CONSULTORS.map(c=>`<option value="${c}"${r.email_consultor===c?' selected':''}>${c}</option>`).join('')}</select>`
-    : `<span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block">${r.email_consultor||''}</span>`;
-  return `<td><div style="display:flex;align-items:center;gap:4px;min-width:145px">${field}<button type="button" onclick="sendReqEmail(${r.id})"${hasEmail?'':' disabled'} title="Enviar TODO per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'};flex-shrink:0">✉️</button></div></td>`;
+    ? `<select class="sel-small" style="max-width:190px;width:100%" onchange="svsReq(${r.id},'email_consultor',this.value)"><option value=""${hasEmail?'':' selected'}>—</option>${CONSULTORS.map(c=>`<option value="${c}"${r.email_consultor===c?' selected':''}>${c}</option>`).join('')}</select>`
+    : `<span style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block">${r.email_consultor||''}</span>`;
+  return `<td><div style="display:flex;align-items:center;gap:4px;min-width:215px">${field}<button type="button" onclick="sendReqEmail(${r.id})"${hasEmail?'':' disabled'} title="Enviar TODO per correu al consultor" style="border:none;background:none;cursor:${hasEmail?'pointer':'not-allowed'};font-size:12pt;opacity:${hasEmail?'1':'.35'};flex-shrink:0">✉️</button></div></td>`;
 }
 function sendReqEmail(id){
   const r=REQ.find(x=>x.id===id);
@@ -1409,8 +1423,8 @@ async function sbGet(){
 async function sbInsert(d){
   const s=rowToSb(d);
   const res=await neonQuery(
-    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat,holded,notes_comercial,consultor,todo,email_consultor) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41) RETURNING *`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,s.todo,s.email_consultor]
+    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat,holded,notes_comercial,consultor,todo,email_consultor,email_consultor_cc) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,s.todo,s.email_consultor,s.email_consultor_cc]
   );
   return res.rows?.[0];
 }
@@ -1431,8 +1445,8 @@ async function sbUpdate(id,d){
     }
   }
   const res=await neonQuery(
-    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,holded=$37,notes_comercial=$38,consultor=$39,todo=$40,email_consultor=$41,updated_at=NOW() WHERE id=$42 RETURNING updated_at`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,s.todo,s.email_consultor,id]
+    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,holded=$37,notes_comercial=$38,consultor=$39,todo=$40,email_consultor=$41,email_consultor_cc=$42,updated_at=NOW() WHERE id=$43 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,s.todo,s.email_consultor,s.email_consultor_cc,id]
   );
   d.updated_at=res.rows?.[0]?.updated_at;
 }
@@ -1463,7 +1477,7 @@ function rowToSb(d){
     proc_comercial_previ:d.proc_comercial_previ,te_requeriment:d.te_requeriment,primer_contacte:d.primer_contacte,
     proposta_presentada:d.proposta_presentada,proposta_enviada:d.proposta_enviada,
     oferta_acceptada:d.oferta_acceptada,kickoff_esperat:d.kickoff_esperat,holded:d.holded,
-    notes_comercial:d.notes_comercial,consultor:d.consultor,todo:d.todo,email_consultor:d.email_consultor};
+    notes_comercial:d.notes_comercial,consultor:d.consultor,todo:d.todo,email_consultor:d.email_consultor,email_consultor_cc:d.email_consultor_cc};
 }
 function sbToRow(r){
   return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',cup_ant:r.cup_ant||'',otorgat:r.otorgat||'',
@@ -1476,7 +1490,7 @@ function sbToRow(r){
     proc_comercial_previ:!!r.proc_comercial_previ,te_requeriment:!!r.te_requeriment,primer_contacte:r.primer_contacte||'',
     proposta_presentada:r.proposta_presentada||'',proposta_enviada:r.proposta_enviada||'',
     oferta_acceptada:!!r.oferta_acceptada,kickoff_esperat:r.kickoff_esperat||'',holded:!!r.holded,
-    notes_comercial:r.notes_comercial||'',consultor:r.consultor||'',todo:!!r.todo,email_consultor:r.email_consultor||''};
+    notes_comercial:r.notes_comercial||'',consultor:r.consultor||'',todo:!!r.todo,email_consultor:r.email_consultor||'',email_consultor_cc:r.email_consultor_cc||''};
 }
 
 // Indicador de guardat
@@ -1549,7 +1563,7 @@ async function addRow(){
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
     web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:'',
     proc_comercial_previ:false,te_requeriment:false,primer_contacte:'',proposta_presentada:'',
-    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:'',holded:false,notes_comercial:'',consultor:'',todo:false,email_consultor:''};
+    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:'',holded:false,notes_comercial:'',consultor:'',todo:false,email_consultor:'',email_consultor_cc:''};
   showSaving();
   try{
     const saved=await sbInsert(nou);

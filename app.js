@@ -411,7 +411,7 @@ function comReqEstatCell(d){
   const estat=latest?(latest.estat||''):'';
   const c=REQ_ESTAT_COLORS[estat]||{};
   const bg=c.bg||'',fg=c.fg||'#222';
-  return `<td class="com-req" style="background:${bg};color:${fg}">${estat}</td>`;
+  return `<td class="com-req" style="background:${bg};color:${fg}"><span style="display:inline-block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${estat}</span></td>`;
 }
 function comCheckCell(d,f){
   const canEdit=cT==='a'&&adminLevel;
@@ -468,7 +468,7 @@ function comOtorgatCell(d){
   const c=OTORGAT_ESTAT[d.otorgat]||{};
   const bg=c.bg||'',fg=c.fg||'#222';
   const canEdit=cT==='a'&&adminLevel;
-  if(!canEdit)return `<td class="com-otor" style="background:${bg};color:${fg}">${d.otorgat||''}</td>`;
+  if(!canEdit)return `<td class="com-otor" style="background:${bg};color:${fg}"><span style="display:inline-block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.otorgat||''}</span></td>`;
   const style=bg?` style="background:${bg};color:${fg}"`:'';
   return `<td class="com-otor"><select${style} onchange="svs(${d.id},'otorgat',this.value)">${OTORGAT_OPTS.map(o=>`<option value="${o}"${d.otorgat===o?' selected':''}>${o||'—'}</option>`).join('')}</select></td>`;
 }

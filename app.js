@@ -403,7 +403,8 @@ function rowHtml(d,isMaster){
 function comCheckColorCell(d,f,colorObj){
   const bg=d[f]?colorObj.bg:'',fg=d[f]?colorObj.fg:'#222';
   const canEdit=cT==='a'&&adminLevel;
-  return `<td class="com-check" style="background:${bg};color:${fg}"><input type="checkbox"${d[f]?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'${f}',this.checked)"></td>`;
+  const interact=canEdit?` onchange="svs(${d.id},'${f}',this.checked)"`:` onclick="return false;" style="cursor:default"`;
+  return `<td class="com-check" style="background:${bg};color:${fg}"><input type="checkbox"${d[f]?' checked':''}${interact}></td>`;
 }
 function comReqEstatCell(d){
   const reqs=REQ.filter(r=>r.cupo_id===d.id);
@@ -415,7 +416,8 @@ function comReqEstatCell(d){
 }
 function comCheckCell(d,f){
   const canEdit=cT==='a'&&adminLevel;
-  return `<td class="com-check"><input type="checkbox"${d[f]?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'${f}',this.checked)"></td>`;
+  const interact=canEdit?` onchange="svs(${d.id},'${f}',this.checked)"`:` onclick="return false;" style="cursor:default"`;
+  return `<td class="com-check"><input type="checkbox"${d[f]?' checked':''}${interact}></td>`;
 }
 function comConsultorCell(d){
   const canEdit=cT==='a'&&adminLevel;
@@ -425,7 +427,8 @@ function comConsultorCell(d){
 function comTodoCell(d){
   const canEdit=cT==='a'&&adminLevel;
   const bg=d.todo?'background:#FF3333;':'';
-  return `<td class="com-check" style="${bg}"><input type="checkbox"${d.todo?' checked':''}${canEdit?'':' disabled'} onchange="svs(${d.id},'todo',this.checked)"></td>`;
+  const interact=canEdit?` onchange="svs(${d.id},'todo',this.checked)"`:` onclick="return false;" style="cursor:default"`;
+  return `<td class="com-check" style="${bg}"><input type="checkbox"${d.todo?' checked':''}${interact}></td>`;
 }
 function comEmailSel(d,field,val,canEdit){
   if(!canEdit)return `<span style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block">${val||''}</span>`;

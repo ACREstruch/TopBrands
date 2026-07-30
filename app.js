@@ -110,7 +110,7 @@ async function exportBBDD(ev){
 }
 async function exportComercial(ev){
   await runExport(ev&&ev.target,async()=>{
-    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','# Edicte O/D','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','TODO','Email consultor','Email consultor CC','Notes comercial'];
+    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','# Edicte O/R','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','TODO','Email consultor','Email consultor CC','Notes comercial'];
     const data=lastComRows.map(d=>{
       const reqs=REQ.filter(r=>r.cupo_id===d.id);
       const latest=reqs.length?reqs.reduce((a,b)=>b.id>a.id?b:a):null;
@@ -456,7 +456,7 @@ function sendComEmail(id){
     `Consultor: ${d.consultor||''}`,
     `Atorgat: ${d.otorgat||''}`,
     `Requeriment: ${reqEstat}`,
-    `# Edicte O/D: ${d.edicte_od||''}`,
+    `# Edicte O/R: ${d.edicte_od||''}`,
     `Procés comercial previ: ${d.proc_comercial_previ?'SI':'PENDENT'}`,
     `Primer contacte: ${d.primer_contacte||''}`,
     `Proposta presentada: ${d.proposta_presentada||''}`,

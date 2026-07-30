@@ -507,7 +507,7 @@ html{scroll-behavior:smooth;}
           <th style="cursor:pointer" onclick="comSort('consultor')" title="Clica per ordenar">Cons<span class="sort-arrow" id="csort-consultor"></span></th>
           <th>Atorgat</th>
           <th>Requeriment</th>
-          <th class="cedicte"># Edicte O/N</th>
+          <th class="cedicte"># Edicte S/N</th>
           <th>Procés<br>com.<br>previ</th>
           <th>Primer<br>contacte</th>
           <th>Proposta<br>presentada</th>
@@ -669,12 +669,12 @@ html{scroll-behavior:smooth;}
           <li><b>Consultor</b> (capçalera "Cons"): desplegable amb la llista "Consultor" del panell ☰ Llistes.</li>
           <li><b>Atorgat:</b> SI / NO / REQUERIT — es pinta de color (SI en lila, NO en gris, REQUERIT en rosa).</li>
           <li><b>Requeriment:</b> només lectura — mostra l'"Estat requeriment" (vegeu pestanya Requeriments) del requeriment més recent d'aquella empresa, amb el mateix color. En crear un requeriment nou, l'Atorgat d'aquella empresa passa sol a REQUERIT; en eliminar l'últim requeriment obert, Atorgat torna a buit.</li>
-          <li><b># Edicte O/N:</b> text lliure (p. ex. "O-edicte-010726" o "N-edicte-010726").</li>
+          <li><b># Edicte S/N:</b> text lliure (p. ex. "S-edicte-010726" o "N-edicte-010726").</li>
           <li><b>Procés comercial previ:</b> casella que es ressalta de color quan està marcada.</li>
           <li><b>Primer contacte, Proposta presentada, Proposta enviada, Kick-off:</b> dates (format DD/MM/AA).</li>
           <li><b>Acceptada:</b> casella simple.</li>
           <li><b>TODO:</b> casella que es ressalta en vermell mentre estigui marcada, per fer-te un recordatori independent de l'estat (igual que a Requeriments).</li>
-          <li><b>Email consultor:</b> desplegable amb els emails de consultors donats d'alta al Panell Llistes ("Consultors (email)"), amb un segon desplegable "CC" opcional a sota per afegir un segon destinatari en còpia. Un cop triat l'email, el botó ✉️ obre el teu client de correu amb tots els camps de la fila (KAM, Empresa, Cupó, Consultor, Atorgat, Requeriment, # Edicte O/N, Procés comercial previ, Primer contacte, Proposta presentada, Proposta enviada, Acceptada, Kick-off, Notes comercial — els camps de casella s'indiquen com "SI" o "PENDENT"), llest per revisar i enviar.</li>
+          <li><b>Email consultor:</b> desplegable amb els emails de consultors donats d'alta al Panell Llistes ("Consultors (email)"), amb un segon desplegable "CC" opcional a sota per afegir un segon destinatari en còpia. Un cop triat l'email, el botó ✉️ obre el teu client de correu amb tots els camps de la fila (KAM, Empresa, Cupó, Consultor, Atorgat, Requeriment, # Edicte S/N, Procés comercial previ, Primer contacte, Proposta presentada, Proposta enviada, Acceptada, Kick-off, Notes comercial — els camps de casella s'indiquen com "SI" o "PENDENT"), llest per revisar i enviar.</li>
           <li><b>Notes comercial:</b> igual que Notes BBDD, una mica menys ampla per fer lloc a TODO i Email consultor.</li>
         </ul>
         <p>A més del filtre Atorgat, es pot filtrar per <b>KAM</b>, <b>Cupó</b> i <b>Consultor</b>; els filtres es poden combinar entre ells i són independents de l'ordenació de columnes. Al desplegable "Filtrar per camp" també hi ha les opcions "TODO — Marcat" i "TODO — Sense marcar".</p>

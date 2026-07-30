@@ -110,22 +110,22 @@ async function exportBBDD(ev){
 }
 async function exportComercial(ev){
   await runExport(ev&&ev.target,async()=>{
-    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','TODO','Email consultor','Email consultor CC','Notes comercial'];
+    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','# Edicte O/D','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','TODO','Email consultor','Email consultor CC','Notes comercial'];
     const data=lastComRows.map(d=>{
       const reqs=REQ.filter(r=>r.cupo_id===d.id);
       const latest=reqs.length?reqs.reduce((a,b)=>b.id>a.id?b:a):null;
-      return [d.g,d.emp,boolTxt(d.nova),d.cup,d.consultor,d.otorgat,latest?(latest.estat||''):'',boolTxt(d.proc_comercial_previ),d.primer_contacte,d.proposta_presentada,d.proposta_enviada,boolTxt(d.oferta_acceptada),d.kickoff_esperat,boolTxt(d.todo),d.email_consultor,d.email_consultor_cc,d.notes_comercial];
+      return [d.g,d.emp,boolTxt(d.nova),d.cup,d.consultor,d.otorgat,latest?(latest.estat||''):'',d.edicte_od,boolTxt(d.proc_comercial_previ),d.primer_contacte,d.proposta_presentada,d.proposta_enviada,boolTxt(d.oferta_acceptada),d.kickoff_esperat,boolTxt(d.todo),d.email_consultor,d.email_consultor_cc,d.notes_comercial];
     });
     await exportSheet('Comercial_cupons.xlsx','Comercial',header,data);
   });
 }
 async function exportRequeriments(ev){
   await runExport(ev&&ev.target,async()=>{
-    const header=['Empresa','Tiquet','Cupó','Expedient','Tipus','Aclariment tècnic','Comentaris Back Office','Dead line','Estat requeriment','TODO','Email consultor','Email consultor CC','Data presentació','Comentaris KAM','Resolució final','Data resolució'];
+    const header=['Empresa','Tiquet','Cupó','Expedient','# Edicte R','Tipus','Aclariment tècnic','Comentaris Back Office','Dead line','Estat requeriment','TODO','Email consultor','Email consultor CC','Data presentació','Comentaris KAM','Resolució final','Data resolució'];
     const data=REQ.map(r=>{
       const ids=parseTipusIds(r.tipus_ids);
       const tipusNames=ids.map(tid=>{const t=REQ_TIPUS.find(x=>x.id===tid);return t?t.alies.split(',')[0]:'';}).filter(Boolean).join(', ');
-      return [r.c_emp,r.c_tke,r.c_cup,r.expedient,tipusNames,r.aclariment_tecnic,r.comentaris_backoffice,r.dead_line,r.estat,boolTxt(r.todo),r.email_consultor,r.email_consultor_cc,r.data_presentacio,r.comentaris_kam,r.resolucio_final,r.data_resolucio];
+      return [r.c_emp,r.c_tke,r.c_cup,r.expedient,r.edicte_r,tipusNames,r.aclariment_tecnic,r.comentaris_backoffice,r.dead_line,r.estat,boolTxt(r.todo),r.email_consultor,r.email_consultor_cc,r.data_presentacio,r.comentaris_kam,r.resolucio_final,r.data_resolucio];
     });
     await exportSheet('Requeriments_cupons.xlsx','Requeriments',header,data);
   });
@@ -456,6 +456,7 @@ function sendComEmail(id){
     `Consultor: ${d.consultor||''}`,
     `Atorgat: ${d.otorgat||''}`,
     `Requeriment: ${reqEstat}`,
+    `# Edicte O/D: ${d.edicte_od||''}`,
     `Procés comercial previ: ${d.proc_comercial_previ?'SI':'PENDENT'}`,
     `Primer contacte: ${d.primer_contacte||''}`,
     `Proposta presentada: ${d.proposta_presentada||''}`,
@@ -484,6 +485,7 @@ function comRowHtml(d){
     ${comConsultorCell(d)}
     ${comOtorgatCell(d)}
     ${comReqEstatCell(d)}
+    <td>${ec(d,'edicte_od',d.edicte_od)}</td>
     ${comCheckColorCell(d,'proc_comercial_previ',OTORGAT_ESTAT.SI)}
     <td class="com-date">${ec(d,'primer_contacte',d.primer_contacte)}</td>
     <td class="com-date">${ec(d,'proposta_presentada',d.proposta_presentada)}</td>
@@ -1127,7 +1129,7 @@ async function setPin(name,pin){
 /* ═══════════════════════════════════════════════
    15. REQUERIMENTS (seguiment post-presentació)
 ═══════════════════════════════════════════════ */
-const REQ_FIELDS=['expedient','tipus_ids','aclariment_tecnic','comentaris_backoffice','dead_line','estat',
+const REQ_FIELDS=['expedient','edicte_r','tipus_ids','aclariment_tecnic','comentaris_backoffice','dead_line','estat',
   'data_presentacio','comentaris_kam','resolucio_final','data_resolucio','todo','email_consultor','email_consultor_cc'];
 const TIPUS_FIELDS=['alies','pregunta','comentari','recurs_nom','recurs_link'];
 
@@ -1243,6 +1245,7 @@ function sendReqEmail(id){
     `Tiquet: ${r.c_tke||''}`,
     `Cupó: ${r.c_cup||''}`,
     `Expedient: ${r.expedient||''}`,
+    `# Edicte R: ${r.edicte_r||''}`,
     `Tipus: ${tipus}`,
     `Aclariment tècnic: ${r.aclariment_tecnic||''}`,
     `Comentaris Back Office: ${r.comentaris_backoffice||''}`,
@@ -1347,6 +1350,7 @@ function reqRowHtml(r){
     <td style="text-align:center">${r.c_tke||''}</td>
     <td style="text-align:center">${r.c_cup||''}</td>
     <td>${ecReq(r,'expedient',r.expedient)}</td>
+    <td>${ecReq(r,'edicte_r',r.edicte_r)}</td>
     ${reqWideCell(r,'tipus',tipusBadges(r))}
     ${reqWideCell(r,'aclariment_tecnic',ecReq(r,'aclariment_tecnic',r.aclariment_tecnic,true))}
     ${reqWideCell(r,'comentaris_backoffice',ecReq(r,'comentaris_backoffice',r.comentaris_backoffice,true))}
@@ -1431,8 +1435,8 @@ async function sbGet(){
 async function sbInsert(d){
   const s=rowToSb(d);
   const res=await neonQuery(
-    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat,holded,notes_comercial,consultor,todo,email_consultor,email_consultor_cc) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42) RETURNING *`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,s.todo,s.email_consultor,s.email_consultor_cc]
+    `INSERT INTO ${YEAR_CONFIG.table} (g,emp,nova,cup,cup_ant,otorgat,cont,mob,email,url_web,url_web_check,reg,sit,tke,f1q,f1d,f2q,f2d,f3q,f3d,web,webq,ita,fhq,hora,pres,presentat,resguard,notes,proc_comercial_previ,te_requeriment,primer_contacte,proposta_presentada,proposta_enviada,oferta_acceptada,kickoff_esperat,holded,notes_comercial,consultor,todo,email_consultor,email_consultor_cc,edicte_od) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43) RETURNING *`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,s.todo,s.email_consultor,s.email_consultor_cc,s.edicte_od]
   );
   return res.rows?.[0];
 }
@@ -1453,8 +1457,8 @@ async function sbUpdate(id,d){
     }
   }
   const res=await neonQuery(
-    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,holded=$37,notes_comercial=$38,consultor=$39,todo=$40,email_consultor=$41,email_consultor_cc=$42,updated_at=NOW() WHERE id=$43 RETURNING updated_at`,
-    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,s.todo,s.email_consultor,s.email_consultor_cc,id]
+    `UPDATE ${YEAR_CONFIG.table} SET g=$1,emp=$2,nova=$3,cup=$4,cup_ant=$5,otorgat=$6,cont=$7,mob=$8,email=$9,url_web=$10,url_web_check=$11,reg=$12,sit=$13,tke=$14,f1q=$15,f1d=$16,f2q=$17,f2d=$18,f3q=$19,f3d=$20,web=$21,webq=$22,ita=$23,fhq=$24,hora=$25,pres=$26,presentat=$27,resguard=$28,notes=$29,proc_comercial_previ=$30,te_requeriment=$31,primer_contacte=$32,proposta_presentada=$33,proposta_enviada=$34,oferta_acceptada=$35,kickoff_esperat=$36,holded=$37,notes_comercial=$38,consultor=$39,todo=$40,email_consultor=$41,email_consultor_cc=$42,edicte_od=$43,updated_at=NOW() WHERE id=$44 RETURNING updated_at`,
+    [s.g,s.emp,s.nova,s.cup,s.cup_ant,s.otorgat,s.cont,s.mob,s.email,s.url_web,s.url_web_check,s.reg,s.sit,s.tke,s.f1q,s.f1d,s.f2q,s.f2d,s.f3q,s.f3d,s.web,s.webq,s.ita,s.fhq,s.hora,s.pres,s.presentat,s.resguard,s.notes,s.proc_comercial_previ,s.te_requeriment,s.primer_contacte,s.proposta_presentada,s.proposta_enviada,s.oferta_acceptada,s.kickoff_esperat,s.holded,s.notes_comercial,s.consultor,s.todo,s.email_consultor,s.email_consultor_cc,s.edicte_od,id]
   );
   d.updated_at=res.rows?.[0]?.updated_at;
 }
@@ -1485,7 +1489,7 @@ function rowToSb(d){
     proc_comercial_previ:d.proc_comercial_previ,te_requeriment:d.te_requeriment,primer_contacte:d.primer_contacte,
     proposta_presentada:d.proposta_presentada,proposta_enviada:d.proposta_enviada,
     oferta_acceptada:d.oferta_acceptada,kickoff_esperat:d.kickoff_esperat,holded:d.holded,
-    notes_comercial:d.notes_comercial,consultor:d.consultor,todo:d.todo,email_consultor:d.email_consultor,email_consultor_cc:d.email_consultor_cc};
+    notes_comercial:d.notes_comercial,consultor:d.consultor,todo:d.todo,email_consultor:d.email_consultor,email_consultor_cc:d.email_consultor_cc,edicte_od:d.edicte_od};
 }
 function sbToRow(r){
   return {id:r.id,g:r.g||'',emp:r.emp||'',nova:!!r.nova,cup:r.cup||'',cup_ant:r.cup_ant||'',otorgat:r.otorgat||'',
@@ -1498,7 +1502,7 @@ function sbToRow(r){
     proc_comercial_previ:!!r.proc_comercial_previ,te_requeriment:!!r.te_requeriment,primer_contacte:r.primer_contacte||'',
     proposta_presentada:r.proposta_presentada||'',proposta_enviada:r.proposta_enviada||'',
     oferta_acceptada:!!r.oferta_acceptada,kickoff_esperat:r.kickoff_esperat||'',holded:!!r.holded,
-    notes_comercial:r.notes_comercial||'',consultor:r.consultor||'',todo:!!r.todo,email_consultor:r.email_consultor||'',email_consultor_cc:r.email_consultor_cc||''};
+    notes_comercial:r.notes_comercial||'',consultor:r.consultor||'',todo:!!r.todo,email_consultor:r.email_consultor||'',email_consultor_cc:r.email_consultor_cc||'',edicte_od:r.edicte_od||''};
 }
 
 // Indicador de guardat
@@ -1571,7 +1575,7 @@ async function addRow(){
     reg:'',sit:'POTENCIAL',tke:'',f1q:'',f1d:'',f2q:'',f2d:'',f3q:'',f3d:'',
     web:'',webq:'',ita:'',fhq:'',hora:'',pres:'',presentat:false,resguard:false,notes:'',
     proc_comercial_previ:false,te_requeriment:false,primer_contacte:'',proposta_presentada:'',
-    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:'',holded:false,notes_comercial:'',consultor:'',todo:false,email_consultor:'',email_consultor_cc:''};
+    proposta_enviada:'',oferta_acceptada:false,kickoff_esperat:'',holded:false,notes_comercial:'',consultor:'',todo:false,email_consultor:'',email_consultor_cc:'',edicte_od:''};
   showSaving();
   try{
     const saved=await sbInsert(nou);

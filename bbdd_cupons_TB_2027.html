@@ -275,11 +275,11 @@ html{scroll-behavior:smooth;}
 <div class="tabs">
   <button class="tab-btn active" onclick="showTab('manual')">📘 Manual</button>
   <button class="tab-btn" onclick="showTab('bbdd')">📋 BBDD</button>
-  <button class="tab-btn" onclick="showTab('comercial')">💼 Comercial</button>
   <button class="tab-btn" onclick="showTab('sch-tickets')">🕐 Schedule — Tickets</button>
   <button class="tab-btn" onclick="showTab('sch-cupo')">🏷️ Schedule — Cupó</button>
   <button class="tab-btn" onclick="showTab('requeriments')">📄 Requeriments</button>
   <button class="tab-btn" onclick="showTab('tipus')">📚 FAQs</button>
+  <button class="tab-btn" onclick="showTab('comercial')">💼 Comercial</button>
 </div>
 
 <!-- ═══════════════ TAB BBDD ═══════════════ -->
@@ -506,6 +506,7 @@ html{scroll-behavior:smooth;}
           <th style="cursor:pointer" onclick="comSort('consultor')" title="Clica per ordenar">Cons<span class="sort-arrow" id="csort-consultor"></span></th>
           <th>Atorgat</th>
           <th>Requeriment</th>
+          <th># Edicte O/D</th>
           <th>Procés<br>com.<br>previ</th>
           <th>Primer<br>contacte</th>
           <th>Proposta<br>presentada</th>
@@ -562,6 +563,7 @@ html{scroll-behavior:smooth;}
           <th>Tiquet</th>
           <th>Cupó</th>
           <th>Expedient</th>
+          <th># Edicte R</th>
           <th>Tipus</th>
           <th>Aclariment tècnic</th>
           <th>Comentaris Back Office</th>
@@ -666,11 +668,12 @@ html{scroll-behavior:smooth;}
           <li><b>Consultor</b> (capçalera "Cons"): desplegable amb la llista "Consultor" del panell ☰ Llistes.</li>
           <li><b>Atorgat:</b> SI / NO / REQUERIT — es pinta de color (SI en lila, NO en gris, REQUERIT en rosa).</li>
           <li><b>Requeriment:</b> només lectura — mostra l'"Estat requeriment" (vegeu pestanya Requeriments) del requeriment més recent d'aquella empresa, amb el mateix color. En crear un requeriment nou, l'Atorgat d'aquella empresa passa sol a REQUERIT; en eliminar l'últim requeriment obert, Atorgat torna a buit.</li>
+          <li><b># Edicte O/D:</b> text lliure (p. ex. "O-edicte-010726" o "D-edicte-010726").</li>
           <li><b>Procés comercial previ:</b> casella que es ressalta de color quan està marcada.</li>
           <li><b>Primer contacte, Proposta presentada, Proposta enviada, Kick-off:</b> dates (format DD/MM/AA).</li>
           <li><b>Acceptada:</b> casella simple.</li>
           <li><b>TODO:</b> casella que es ressalta en vermell mentre estigui marcada, per fer-te un recordatori independent de l'estat (igual que a Requeriments).</li>
-          <li><b>Email consultor:</b> desplegable amb els emails de consultors donats d'alta al Panell Llistes ("Consultors (email)"), amb un segon desplegable "CC" opcional a sota per afegir un segon destinatari en còpia. Un cop triat l'email, el botó ✉️ obre el teu client de correu amb tots els camps de la fila (KAM, Empresa, Cupó, Consultor, Atorgat, Requeriment, Procés comercial previ, Primer contacte, Proposta presentada, Proposta enviada, Acceptada, Kick-off, Notes comercial — els camps de casella s'indiquen com "SI" o "PENDENT"), llest per revisar i enviar.</li>
+          <li><b>Email consultor:</b> desplegable amb els emails de consultors donats d'alta al Panell Llistes ("Consultors (email)"), amb un segon desplegable "CC" opcional a sota per afegir un segon destinatari en còpia. Un cop triat l'email, el botó ✉️ obre el teu client de correu amb tots els camps de la fila (KAM, Empresa, Cupó, Consultor, Atorgat, Requeriment, # Edicte O/D, Procés comercial previ, Primer contacte, Proposta presentada, Proposta enviada, Acceptada, Kick-off, Notes comercial — els camps de casella s'indiquen com "SI" o "PENDENT"), llest per revisar i enviar.</li>
           <li><b>Notes comercial:</b> igual que Notes BBDD, una mica menys ampla per fer lloc a TODO i Email consultor.</li>
         </ul>
         <p>A més del filtre Atorgat, es pot filtrar per <b>KAM</b>, <b>Cupó</b> i <b>Consultor</b>; els filtres es poden combinar entre ells i són independents de l'ordenació de columnes. Al desplegable "Filtrar per camp" també hi ha les opcions "TODO — Marcat" i "TODO — Sense marcar".</p>
@@ -695,12 +698,13 @@ html{scroll-behavior:smooth;}
         </ol>
         <h3>Camps destacats</h3>
         <ul>
+          <li><b># Edicte R:</b> text lliure (p. ex. "R-edicte-010726"), abans de Tipus.</li>
           <li><b>Tipus:</b> etiquetes del catàleg (vegeu FAQs); clica-hi per afegir-ne o treure'n.</li>
           <li><b>Aclariment tècnic, Comentaris Back Office, Comentaris KAM:</b> text llarg amb alçada limitada i botó "+" per expandir.</li>
           <li><b>Estat requeriment:</b> N/A, Pendent presentació, Presentat, Perdut, Resolt, Atorgat, No aplica — es pinta de color.</li>
           <li><b>Resolució final:</b> Concedit, Resolt, Inadmissió, Refusat. Canvia sol l'Estat requeriment: Concedit → Atorgat; Resolt → Resolt; Refusat/Inadmissió → Perdut.</li>
           <li><b>TODO:</b> casella que es ressalta en vermell mentre estigui marcada, per fer-te un recordatori independent de l'estat.</li>
-          <li><b>Email consultor:</b> desplegable amb els emails de consultors donats d'alta al Panell Llistes (vegeu més avall), amb un segon desplegable "CC" opcional a sota per afegir un segon destinatari en còpia. Un cop triat l'email, el botó ✉️ obre el teu client de correu amb un missatge ja redactat (Empresa, Tiquet, Cupó, Expedient, Tipus, Aclariment tècnic, Comentaris Back Office, Dead line i Estat), llest per revisar i enviar.</li>
+          <li><b>Email consultor:</b> desplegable amb els emails de consultors donats d'alta al Panell Llistes (vegeu més avall), amb un segon desplegable "CC" opcional a sota per afegir un segon destinatari en còpia. Un cop triat l'email, el botó ✉️ obre el teu client de correu amb un missatge ja redactat (Empresa, Tiquet, Cupó, Expedient, # Edicte R, Tipus, Aclariment tècnic, Comentaris Back Office, Dead line i Estat), llest per revisar i enviar.</li>
           <li><b>Dead line, Data presentació, Data resolució:</b> dates en format DD/MM/AA.</li>
         </ul>
         <div class="man-tip">💡 Les columnes Empresa, Tiquet, Cupó i Expedient queden fixes en fer scroll horitzontal.</div>

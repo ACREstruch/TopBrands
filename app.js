@@ -110,7 +110,7 @@ async function exportBBDD(ev){
 }
 async function exportComercial(ev){
   await runExport(ev&&ev.target,async()=>{
-    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','# Edicte O/R','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','TODO','Email consultor','Email consultor CC','Notes comercial'];
+    const header=['KAM','Empresa','Nova','Cupó','Consultor','Atorgat','Requeriment','# Edicte O/N','Procés comercial previ','Primer contacte','Proposta presentada','Proposta enviada','Acceptada','Kick-off','TODO','Email consultor','Email consultor CC','Notes comercial'];
     const data=lastComRows.map(d=>{
       const reqs=REQ.filter(r=>r.cupo_id===d.id);
       const latest=reqs.length?reqs.reduce((a,b)=>b.id>a.id?b:a):null;
@@ -456,7 +456,7 @@ function sendComEmail(id){
     `Consultor: ${d.consultor||''}`,
     `Atorgat: ${d.otorgat||''}`,
     `Requeriment: ${reqEstat}`,
-    `# Edicte O/R: ${d.edicte_od||''}`,
+    `# Edicte O/N: ${d.edicte_od||''}`,
     `Procés comercial previ: ${d.proc_comercial_previ?'SI':'PENDENT'}`,
     `Primer contacte: ${d.primer_contacte||''}`,
     `Proposta presentada: ${d.proposta_presentada||''}`,
@@ -485,7 +485,7 @@ function comRowHtml(d){
     ${comConsultorCell(d)}
     ${comOtorgatCell(d)}
     ${comReqEstatCell(d)}
-    <td>${ec(d,'edicte_od',d.edicte_od)}</td>
+    <td class="cedicte">${ec(d,'edicte_od',d.edicte_od)}</td>
     ${comCheckColorCell(d,'proc_comercial_previ',OTORGAT_ESTAT.SI)}
     <td class="com-date">${ec(d,'primer_contacte',d.primer_contacte)}</td>
     <td class="com-date">${ec(d,'proposta_presentada',d.proposta_presentada)}</td>
@@ -1350,7 +1350,7 @@ function reqRowHtml(r){
     <td style="text-align:center">${r.c_tke||''}</td>
     <td style="text-align:center">${r.c_cup||''}</td>
     <td>${ecReq(r,'expedient',r.expedient)}</td>
-    <td>${ecReq(r,'edicte_r',r.edicte_r)}</td>
+    <td class="cedicte">${ecReq(r,'edicte_r',r.edicte_r)}</td>
     ${reqWideCell(r,'tipus',tipusBadges(r))}
     ${reqWideCell(r,'aclariment_tecnic',ecReq(r,'aclariment_tecnic',r.aclariment_tecnic,true))}
     ${reqWideCell(r,'comentaris_backoffice',ecReq(r,'comentaris_backoffice',r.comentaris_backoffice,true))}
